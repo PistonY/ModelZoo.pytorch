@@ -1,5 +1,5 @@
 import torch
-from basic_module.octconv import *
+from oct_module.octconv import *
 
 # test first layer
 data1 = torch.randn(1, 64, 64, 64)

@@ -1,5 +1,6 @@
 __all__ = ['resnet50', 'resnet50v2']
-from basic_module import *
+
+from oct_module import *
 from utils import *
 from torch import nn
 
