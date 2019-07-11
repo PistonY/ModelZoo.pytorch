@@ -36,7 +36,7 @@ class InvertedResidual(nn.Module):
 
 class FairNasA(nn.Module):
     def __init__(self, num_classes=1000, small_input=False):
-        super(FairNasC, self).__init__()
+        super(FairNasA, self).__init__()
         self.first_block = nn.Sequential(
             nn.Conv2d(3, 32, 3, 2 if not small_input else 1, 1, bias=False),
             nn.BatchNorm2d(32),
@@ -87,7 +87,7 @@ class FairNasA(nn.Module):
 
 class FairNasB(nn.Module):
     def __init__(self, num_classes=1000, small_input=False):
-        super(FairNasC, self).__init__()
+        super(FairNasB, self).__init__()
         self.first_block = nn.Sequential(
             nn.Conv2d(3, 32, 3, 2 if not small_input else 1, 1, bias=False),
             nn.BatchNorm2d(32),
