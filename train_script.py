@@ -2,7 +2,6 @@
 # @Author  : DevinYang(pistonyang@gmail.com)
 
 import os, argparse, time, logging, math
-
 import numpy as np
 import models
 import torch
@@ -12,13 +11,14 @@ from torchtoolbox.tools import split_weights, CosineWarmupLr, \
     mixup_data, mixup_criterion
 from torch.nn import functional as F
 from torchvision import transforms
-from torchvision.datasets import ImageNet
+from torchvision.datasets import ImageNet, ImageFolder
 from torch.utils.data import DataLoader
 from torch import nn
 from torch import optim
 from apex import amp
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,2,4,6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+torch.backends.cudnn.benchmark = True
 
 parser = argparse.ArgumentParser(description='Train a Octave based Model.')
 parser.add_argument('--data-path', type=str, required=True,
@@ -69,8 +69,8 @@ parser.add_argument('--label-smoothing', action='store_true',
                     help='use label smoothing or not in training. default is false.')
 parser.add_argument('--no-wd', action='store_true',
                     help='whether to remove weight decay on bias, and beta/gamma for batchnorm layers.')
-parser.add_argument('--save-frequency', type=int, default=10,
-                    help='frequency of model saving.')
+# parser.add_argument('--save-frequency', type=int, default=10,
+#                     help='frequency of model saving.')
 parser.add_argument('--save-dir', type=str, default='params',
                     help='directory of saved models')
 parser.add_argument('--log-interval', type=int, default=50,
@@ -132,7 +132,6 @@ _val_transform = transforms.Compose([
 
 train_data = DataLoader(ImageNet(args.data_path, split='train', transform=_train_transform),
                         batch_size, True, num_workers=num_workers, drop_last=True)
-
 val_data = DataLoader(ImageNet(args.data_path, split='val', transform=_val_transform),
                       batch_size, False, num_workers=num_workers, drop_last=False)
 
@@ -141,15 +140,17 @@ try:
 except TypeError:
     model = get_model(args.model)
 
-model = nn.DataParallel(model, device_ids=device_ids)
+# model = nn.DataParallel(model, device_ids=device_ids)
 parameters = model.parameters() if not args.no_wd else split_weights(model)
 optimizer = optim.SGD(parameters, lr=args.lr, momentum=args.momentum,
                       weight_decay=args.wd, nesterov=True)
+model.to(device)
 
 if args.dtype == 'float16':
     model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
 
-model.to(device)
+# model = nn.DataParallel(model, device_ids=device_ids)
+
 lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
                               base_lr=args.lr, warmup_epochs=args.warmup_epochs)
 top1_acc = metric.Accuracy(name='Top1 Accuracy')
@@ -192,7 +193,7 @@ def train():
         tic = time.time()
 
         model.train()
-        for data, labels in train_data:
+        for i, (data, labels) in enumerate(train_data):
             data, labels = data.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(data)
@@ -204,6 +205,13 @@ def train():
             top1_acc.step(outputs, labels)
             top5_acc.step(outputs, labels)
             loss_record.step(loss)
+
+            if i % args.log_interval == 0 and i != 0:
+                logger.info('Epoch {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s.'.format(
+                    epoch, i, top1_acc.name, top1_acc.get(),
+                    loss_record.name, loss_record.get(),
+                    int((i * batch_size) // (time.time() - tic))
+                ))
 
         train_speed = int(num_training_samples // (time.time() - tic))
         epoch_msg = 'Train Epoch {}: {}:{:.5}, {}:{:.5}, {}:{:.5}, {} samples/s, lr:{}'.format(
@@ -223,7 +231,7 @@ def train_mixup():
         tic = time.time()
 
         model.train()
-        for data, labels in train_data:
+        for i, (data, labels) in enumerate(train_data):
             data, labels = data.to(device), labels.to(device)
             data, labels_a, labels_b, lam = mixup_data(data, labels, alpha)
             optimizer.zero_grad()
@@ -236,8 +244,15 @@ def train_mixup():
             lr_scheduler.step()
             with torch.no_grad():
                 softmax_outputs = F.softmax(outputs, dim=1)
-                rmse = ((labels - softmax_outputs) ** 2).mean()
+                rmse = ((labels.unsqueeze(1).float() - softmax_outputs) ** 2).mean()
             RMSE.step(rmse)
+
+            if i % args.log_interval == 0 and i != 0:
+                logger.info('Epoch {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s.'.format(
+                    epoch, i, RMSE.name, RMSE.get(),
+                    loss_record.name, loss_record.get(),
+                    int((i * batch_size) // (time.time() - tic))
+                ))
 
         train_speed = int(num_training_samples // (time.time() - tic))
         train_msg = 'Train Epoch {}: {}:{:.5}, {}:{:.5}, {} samples/s, lr:{:.5}'.format(
@@ -248,4 +263,7 @@ def train_mixup():
 
 
 if __name__ == '__main__':
-    train()
+    if args.mixup:
+        train_mixup()
+    else:
+        train()
