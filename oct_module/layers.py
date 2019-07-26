@@ -8,6 +8,7 @@ class fs_bn(nn.Module):
         super().__init__()
         h_out = int((1 - alpha) * channels)
         l_out = int(alpha * channels)
+
         self.h_bn = nn.BatchNorm2d(h_out)
         self.l_bn = nn.BatchNorm2d(l_out) if alpha != 0 else None
 
