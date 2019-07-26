@@ -32,7 +32,7 @@ You can think of it as a performance in the current situation.
 |model | epochs| dtype |batch size*|gpus  | lr  |  tricks|top1/top5  |improve |
 |:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------:|:------:|
 |resnet50|120  |FP16   |128        | 8    |0.4  | -      |77.35/-    |baseline|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Lable smoothing|77.78/93.80 |+0.43 |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Label smoothing|77.78/93.80 |+0.43 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |No bias decay  |77.28/93.61*|-0.07 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |77.31/93.49^|-0.04 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          | | |
