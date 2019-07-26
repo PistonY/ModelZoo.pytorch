@@ -235,10 +235,8 @@ def train():
 
 
 def train_mixup():
-    RMSE = metric.NumericalCost(name='RMSE')
     mixup_off_epoch = 0 if args.mixup_off_epoch == 0 else epochs
     for epoch in range(args.epochs):
-        RMSE.reset()
         loss_record.reset()
         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
         tic = time.time()
@@ -259,21 +257,16 @@ def train_mixup():
 
             loss_record.step(loss)
             lr_scheduler.step()
-            with torch.no_grad():
-                softmax_outputs = F.softmax(outputs, dim=1)
-                rmse = ((labels.unsqueeze(1).float() - softmax_outputs) ** 2).mean()
-            RMSE.step(rmse)
 
             if i % args.log_interval == 0 and i != 0:
-                logger.info('Epoch {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s.'.format(
-                    epoch, i, RMSE.name, RMSE.get(),
-                    loss_record.name, loss_record.get(),
+                logger.info('Epoch {}, Iter {}, {}:{:.5}, {} samples/s.'.format(
+                    epoch, i, loss_record.name, loss_record.get(),
                     int((i * batch_size) // (time.time() - tic))
                 ))
 
         train_speed = int(num_training_samples // (time.time() - tic))
-        train_msg = 'Train Epoch {}: {}:{:.5}, {}:{:.5}, {} samples/s, lr:{:.5}'.format(
-            epoch, RMSE.name, RMSE.get(), loss_record.name, loss_record.get(),
+        train_msg = 'Train Epoch {}: {}:{:.5}, {} samples/s, lr:{:.5}'.format(
+            epoch, loss_record.name, loss_record.get(),
             train_speed, lr_scheduler.learning_rate)
         logger.info(train_msg)
         test(epoch)
@@ -281,7 +274,7 @@ def train_mixup():
 
 if __name__ == '__main__':
     if args.mixup:
-        logger.info('Train with Mixup.')
+        logger.info('Train using Mixup.')
         train_mixup()
     else:
         train()
