@@ -44,22 +44,23 @@ You can think of it as a performance in the current situation.
 
 ## Usage
 ### Environment
-    - OS: Ubuntu 18.04
-    - CUDA: 10.0, CuDNN: 7.5
-    - Devices: 8 * RTX 2080ti. This project is under FP16, it's recommend to use FP16 friendly devices like 
-    RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me. 
+- OS: Ubuntu 18.04
+- CUDA: 10.0, CuDNN: 7.5
+- Devices: I use 8 * RTX 2080ti. This project is under pure FP16, it's recommend to use FP16 friendly devices like 
+RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me. 
 
 ### Requirement
-    - Pytorch: >= 1.1.0
-    - [Apex](https://github.com/NVIDIA/apex): nightly version. Support a optimized FP16 tools. 
-    - [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version. Helper functions to make your code simpler and more readable, it's a optional tools
-    if you don't want to use it just write them youself.
+- Pytorch: >= 1.1.0
+- [Apex](https://github.com/NVIDIA/apex): nightly version. Support a optimized FP16 tools. 
+- [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version. Helper functions to make your code simpler and more readable, it's a optional tools
+if you don't want to use it just write them youself.
 
 ##ToDo
-    - Try Nvidia-Dali
-    - Multi-node(distributed) training by Apex or BytePS
-    - I may try AutoAugment.This project aim to train models by ourselves to observe and learn,
+- [] Try Nvidia-DALI
+- [] Multi-node(distributed) training by Apex or BytePS
+- [] I may try AutoAugment.This project aim to train models by ourselves to observe and learn,
      it's impossible for me to train this, just copy feels meaningless.
+
 ## Citation
 ```
 @misc{ModelZoo.pytorch,
@@ -69,15 +70,19 @@ You can think of it as a performance in the current situation.
   year = {2019}
   }
 ```
+
 ## Reference
-    - [1] [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385.pdf)
-    - [2] [Bag of Tricks for Image Classification with Convolutional Neural Networks](https://arxiv.org/pdf/1812.01187.pdf)
-    - [3] [Drop an Octave: Reducing Spatial Redundancy in Convolutional Neural Networks with Octave Convolution](https://export.arxiv.org/pdf/1904.05049)
-    - [4] [Rethinking the Inception Architecture for Computer Vision](https://arxiv.org/pdf/1512.00567.pdf)
-    - [5] [Improved Regularization of Convolutional Neural Networks with Cutout](https://arxiv.org/pdf/1708.04552.pdf)
-    - [6] [Differentiable Learning-to-Normalize via Switchable Normalization](https://arxiv.org/pdf/1806.10779.pdf) [OpenSourse](https://github.com/switchablenorms/Switchable-Normalization)
-    - [7] [Highly Scalable Deep Learning Training System with Mixed-Precision: Training ImageNet in Four Minutes](https://arxiv.org/pdf/1807.11205.pdf)
-    - [8] [MIXED PRECISION TRAINING](https://arxiv.org/pdf/1710.03740.pdf)
-    - [9] [Deep Networks with Stochastic Depth](https://arxiv.org/pdf/1603.09382.pdf)
-    - [10] [SEARCHING FOR ACTIVATION FUNCTIONS](https://arxiv.org/pdf/1710.05941.pdf)
-    - [11] [Lookahead Optimizer: k steps forward, 1 step back](https://arxiv.org/abs/1907.08610)
+- [1] [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385.pdf)
+- [2] [Bag of Tricks for Image Classification with Convolutional Neural Networks](https://arxiv.org/pdf/1812.01187.pdf)
+- [3] [Drop an Octave: Reducing Spatial Redundancy in Convolutional Neural Networks with Octave Convolution](https://export.arxiv.org/pdf/1904.05049)
+- [4] [Rethinking the Inception Architecture for Computer Vision](https://arxiv.org/pdf/1512.00567.pdf)
+- [5] [Improved Regularization of Convolutional Neural Networks with Cutout](https://arxiv.org/pdf/1708.04552.pdf)
+- [6] [Differentiable Learning-to-Normalize via Switchable Normalization](https://arxiv.org/pdf/1806.10779.pdf) [OpenSourse](https://github.com/switchablenorms/Switchable-Normalization)
+- [7] [Highly Scalable Deep Learning Training System with Mixed-Precision: Training ImageNet in Four Minutes](https://arxiv.org/pdf/1807.11205.pdf)
+- [8] [MIXED PRECISION TRAINING](https://arxiv.org/pdf/1710.03740.pdf)
+- [9] [Deep Networks with Stochastic Depth](https://arxiv.org/pdf/1603.09382.pdf)
+- [10] [SEARCHING FOR ACTIVATION FUNCTIONS](https://arxiv.org/pdf/1710.05941.pdf)
+- [11] [Lookahead Optimizer: k steps forward, 1 step back](https://arxiv.org/abs/1907.08610)
+
+
+
