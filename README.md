@@ -11,7 +11,7 @@ try my best to get SOTA model on ImageNet. In this repo I'll only consider pure 
 |:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---:|:--------------:|:-------:|
 |resnet50|120  |FP16   |128        |  8   |0.4  | -      | 950 |   7700         |77.35/-  |
 
-- I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2](to save time), it's more common and effective.
+- I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2] (to save time), it's more common and effective.
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
 - ^This is average memory cost.
 - Resnet 50 top5 in log file is not right(actually is top -5), just ignore it.
@@ -55,10 +55,10 @@ RTX series, V100. If you want to totally reproduce my research, you'd better use
 - [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version. Helper functions to make your code simpler and more readable, it's a optional tools
 if you don't want to use it just write them youself.
 
-##ToDo
-- [] Try Nvidia-DALI
-- [] Multi-node(distributed) training by Apex or BytePS
-- [] I may try AutoAugment.This project aim to train models by ourselves to observe and learn,
+## ToDo
+- [ ] Try Nvidia-DALI
+- [ ] Multi-node(distributed) training by Apex or BytePS
+- [ ] I may try AutoAugment.This project aim to train models by ourselves to observe and learn,
      it's impossible for me to train this, just copy feels meaningless.
 
 ## Citation
