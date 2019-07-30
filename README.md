@@ -11,10 +11,10 @@ try my best to get SOTA model on ImageNet. In this repo I'll only consider pure 
 |:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---:|:--------------:|:-------:|
 |resnet50|120  |FP16   |128        |  8   |0.4  | -      | 950 |   7700         |77.35/-  |
 
-    - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2](to save time), it's more common and effective.
-    - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
-    - ^This is average memory cost.
-    - Resnet 50 top5 in log file is not right(actually is top -5), just ignore it.
+- I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2](to save time), it's more common and effective.
+- *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
+- ^This is average memory cost.
+- Resnet 50 top5 in log file is not right(actually is top -5), just ignore it.
 
 ## Ablation Study on Tricks
 Here are lots of tricks to improve accuracy during this years.(If you have another idea please open an issue.)
@@ -38,9 +38,9 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |77.31/93.49^|-0.04 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |77.41/93.66 |+0.06 |
 
-    - *If you only have 1k(128*8) batch size, it's not recommend to use this which made unstable convergence and finally 
+- *If you only have 1k(128*8) batch size, it's not recommend to use this which made unstable convergence and finally 
     can't get a higher accuracy.Origin paper use 64k batch size but impossible for me to follow.
-    - ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like you are using one GPU to train.
+ - ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like you are using one GPU to train.
 
 ## Usage
 ### Environment
