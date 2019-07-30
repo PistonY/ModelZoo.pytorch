@@ -38,9 +38,9 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |77.31/93.49^|-0.04 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |77.41/93.66 |+0.06 |
 
-- *If you only have 1k(128*8) batch size, it's not recommend to use this which made unstable convergence and finally 
+- *If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
     can't get a higher accuracy.Origin paper use 64k batch size but impossible for me to follow.
- - ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like you are using one GPU to train.
+ - ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
 
 ## Usage
 ### Environment
@@ -58,7 +58,7 @@ if you don't want to use it just write them youself.
 ## ToDo
 - [ ] Try Nvidia-DALI
 - [ ] Multi-node(distributed) training by Apex or BytePS
-- [ ] I may try AutoAugment.This project aim to train models by ourselves to observe and learn,
+- [ ] I may try AutoAugment.This project aims to train models by ourselves to observe and learn,
      it's impossible for me to train this, just copy feels meaningless.
 
 ## Citation
