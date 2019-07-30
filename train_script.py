@@ -67,7 +67,7 @@ parser.add_argument('--mixup', action='store_true',
 parser.add_argument('--mixup-alpha', type=float, default=0.2,
                     help='beta distribution parameter for mixup sampling, default is 0.2.')
 parser.add_argument('--mixup-off-epoch', type=int, default=0,
-                    help='how many last epochs to train without mixup, default is 0.')
+                    help='how many epochs to train without mixup, default is 0.')
 parser.add_argument('--label-smoothing', action='store_true',
                     help='use label smoothing or not in training. default is false.')
 parser.add_argument('--no-wd', action='store_true',
@@ -197,7 +197,7 @@ def test(epoch=0, save_status=True):
 
 
 def train():
-    for epoch in range(args.epochs):
+    for epoch in range(epochs):
         top1_acc.reset()
         loss_record.reset()
         tic = time.time()
@@ -235,8 +235,8 @@ def train():
 
 
 def train_mixup():
-    mixup_off_epoch = 0 if args.mixup_off_epoch == 0 else epochs
-    for epoch in range(args.epochs):
+    mixup_off_epoch = epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
+    for epoch in range(epochs):
         loss_record.reset()
         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
         tic = time.time()

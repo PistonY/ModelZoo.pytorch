@@ -4,11 +4,12 @@ This is a model zoo project under Pytorch. In this repo I will implement some of
 models which have good performance on ImageNet. Then I will train them in most fair way as possible and
 try my best to get SOTA model on ImageNet. In this repo I'll only consider pure FP16.
 
+
 ## Baseline models
 
-|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|speed|memory cost(MiB)^|top1/top5|proposed top1|
-|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---:|:--------------:|:-------:|:-----------:|
-|resnet50|120  |FP16   |128        |  8   |0.4  | -      | 950 |   7700         |77.35/-  |77.15(FP32)  |
+|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|speed|memory cost(MiB)^|top1/top5|
+|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---:|:--------------:|:-------:|
+|resnet50|120  |FP16   |128        |  8   |0.4  | -      | 950 |   7700         |77.35/-  |
 
     - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2](to save time), it's more common and effective.
     - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
@@ -20,8 +21,8 @@ Here are lots of tricks to improve accuracy during this years.(If you have anoth
 I want to verify them in a fair way.
 
 
-Tricks: Drop out, Label Smoothing[4], Sync BN, SwitchNorm[6], Mixup[5], no bias decay[7], Cutout[5], 
-swish activation[10], Stochastic Depth[9]
+Tricks: RandomRotation, Drop out, Label Smoothing[4], Sync BN, SwitchNorm[6], Mixup[5], no bias decay[7], Cutout[5], 
+swish activation[10], Stochastic Depth[9], Lookahead Optimizer[11]
 
 Special: Zero-initialize the last BN, just call it 'Zero γ'.
 
@@ -35,13 +36,24 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Label smoothing|77.78/93.80 |+0.43 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |No bias decay  |77.28/93.61*|-0.07 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |77.31/93.49^|-0.04 |
-|resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          | | |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |77.41/93.66 |+0.06 |
 
     - *If you only have 1k(128*8) batch size, it's not recommend to use this which made unstable convergence and finally 
     can't get a higher accuracy.Origin paper use 64k batch size but impossible for me to follow.
     - ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like you are using one GPU to train.
-      
 
+## Usage
+### Environment
+    - OS: Ubuntu 18.04
+    - CUDA: 10.0, CuDNN: 7.5
+    - Devices: 8 * RTX 2080ti. This project is under FP16, it's recommend to use FP16 friendly devices like 
+    RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me. 
+
+### Requirement
+    - Pytorch: >= 1.1.0
+    - [Apex](https://github.com/NVIDIA/apex): nightly version. Support a optimized FP16 tools. 
+    - [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version. Helper functions to make your code simpler and more readable, it's a optional tools
+    if you don't want to use it just write them youself.
 
 ##ToDo
     - Try Nvidia-Dali
@@ -51,10 +63,10 @@ You can think of it as a performance in the current situation.
 ## Citation
 ```
 @misc{ModelZoo.pytorch,
-  title = {ModelZoo for Pytorch: Basic classification model reproduce and explore},
+  title = {ModelZoo for Pytorch: Basic deep neural network reproduce and explore},
   author = {X.Yang},
   URL = {},
-  year = {2019} 
+  year = {2019}
   }
 ```
 ## Reference
@@ -68,4 +80,4 @@ You can think of it as a performance in the current situation.
     - [8] [MIXED PRECISION TRAINING](https://arxiv.org/pdf/1710.03740.pdf)
     - [9] [Deep Networks with Stochastic Depth](https://arxiv.org/pdf/1603.09382.pdf)
     - [10] [SEARCHING FOR ACTIVATION FUNCTIONS](https://arxiv.org/pdf/1710.05941.pdf)
-    
+    - [11] [Lookahead Optimizer: k steps forward, 1 step back](https://arxiv.org/abs/1907.08610)
