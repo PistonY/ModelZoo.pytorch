@@ -6,12 +6,15 @@ import models
 import torch
 import warnings
 import apex
+
 from torchtoolbox import metric
+from torchtoolbox.transform import Cutout
 from torchtoolbox.nn import LabelSmoothingLoss
+from torchtoolbox.optimizer import CosineWarmupLr
 from torchtoolbox.nn.init import KaimingInitializer
-from torchtoolbox.tools import split_weights, CosineWarmupLr, \
+from torchtoolbox.tools import split_weights, \
     mixup_data, mixup_criterion
-from torch.nn import functional as F
+
 from torchvision import transforms
 from torchvision.datasets import ImageNet
 from torch.utils.data import DataLoader
@@ -118,9 +121,10 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 
 _train_transform = transforms.Compose([
     transforms.RandomResizedCrop(224),
+    Cutout(),
     transforms.RandomHorizontalFlip(),
-    transforms.ColorJitter(0.4, 0.4, 0.4),
     # transforms.RandomRotation(15),
+    transforms.ColorJitter(0.4, 0.4, 0.4),
     transforms.ToTensor(),
     normalize,
 ])
