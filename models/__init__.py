@@ -3,4 +3,9 @@
 
 from .oct_resnet import *
 from .resnet import *
-
+from torchvision.models.alexnet import *
+from torchvision.models.densenet import *
+from torchvision.models.googlenet import *
+from torchvision.models.inception import *
+from torchvision.models.shufflenetv2 import *
+from torchvision.models.vgg import *
