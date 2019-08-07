@@ -58,7 +58,7 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |RandomRotation |76.64/93.28 |-1.14 |
 
 - *If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
-    can't get a higher accuracy.Origin paper use 64k batch size but impossible for me to follow.
+    can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
 - ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
 
 ## ToDo

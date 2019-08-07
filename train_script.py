@@ -37,8 +37,8 @@ parser.add_argument('-j', '--num-data-workers', dest='num_workers', default=4, t
                     help='number of preprocessing workers')
 parser.add_argument('--epochs', type=int, default=1,
                     help='number of training epochs.')
-parser.add_argument('--lr', type=float, default=0.1,
-                    help='learning rate. default is 0.1.')
+parser.add_argument('--lr', type=float, default=0,
+                    help='learning rate. default is 0.')
 parser.add_argument('--momentum', type=float, default=0.9,
                     help='momentum value for optimizer, default is 0.9.')
 parser.add_argument('--wd', type=float, default=0.0001,
@@ -111,6 +111,7 @@ device = torch.device("cuda:0")
 device_ids = args.devices.strip().split(',')
 device_ids = [int(device) for device in device_ids]
 
+lr = 0.1 * (args.batch_size // 32) if args.lr == 0 else args.lr
 batch_size = args.batch_size * len(device_ids)
 epochs = args.epochs
 batches_pre_epoch = num_training_samples // batch_size
@@ -122,8 +123,8 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 _train_transform = transforms.Compose([
     transforms.RandomResizedCrop(224),
     Cutout(),
-    transforms.RandomHorizontalFlip(),
     # transforms.RandomRotation(15),
+    transforms.RandomHorizontalFlip(),
     transforms.ColorJitter(0.4, 0.4, 0.4),
     transforms.ToTensor(),
     normalize,
@@ -151,7 +152,7 @@ if args.sync_bn:
     model = apex.parallel.convert_syncbn_model(model)
 
 parameters = model.parameters() if not args.no_wd else split_weights(model)
-optimizer = optim.SGD(parameters, lr=args.lr, momentum=args.momentum,
+optimizer = optim.SGD(parameters, lr=lr, momentum=args.momentum,
                       weight_decay=args.wd, nesterov=True)
 KaimingInitializer(model)
 model.to(device)

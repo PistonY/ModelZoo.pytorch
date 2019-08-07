@@ -60,3 +60,6 @@ class OctaveConv(nn.Module):
                 y_h_out = y_hh
                 y_l_out = y_ll
             return y_h_out, y_l_out
+
+# Helper func to void use if/else in forward
+
