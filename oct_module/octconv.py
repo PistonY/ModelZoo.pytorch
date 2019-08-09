@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# @Author  : DevinYang(pistonyang@gmail.com)
 __all__ = ['OctaveConv']
 from torch import nn
 
@@ -62,4 +64,3 @@ class OctaveConv(nn.Module):
             return y_h_out, y_l_out
 
 # Helper func to void use if/else in forward
-
