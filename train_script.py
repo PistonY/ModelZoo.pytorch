@@ -9,7 +9,7 @@ import apex
 
 from torchtoolbox import metric
 from torchtoolbox.transform import Cutout
-from torchtoolbox.nn import LabelSmoothingLoss
+from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
 from torchtoolbox.optimizer import CosineWarmupLr
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import split_weights, \
@@ -43,6 +43,8 @@ parser.add_argument('--momentum', type=float, default=0.9,
                     help='momentum value for optimizer, default is 0.9.')
 parser.add_argument('--wd', type=float, default=0.0001,
                     help='weight decay rate. default is 0.0001.')
+parser.add_argument('--dropout', type=float, default=0.,
+                    help='model dropout rate.')
 parser.add_argument('--sync-bn', action='store_true',
                     help='use Apex Sync-BN.')
 # parser.add_argument('--lr-mode', type=str, default='step',
@@ -65,6 +67,10 @@ parser.add_argument('--input-size', type=int, default=224,
                     help='size of the input image size. default is 224')
 parser.add_argument('--crop-ratio', type=float, default=0.875,
                     help='Crop ratio during validation. default is 0.875')
+parser.add_argument('--norm-layer', type=str, default='',
+                    help='Norm layer to use.')
+parser.add_argument('--activation', type=str, default='',
+                    help='activation to use.')
 parser.add_argument('--mixup', action='store_true',
                     help='whether train the model with mix-up. default is false.')
 parser.add_argument('--mixup-alpha', type=float, default=0.2,
@@ -122,7 +128,7 @@ normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
 
 _train_transform = transforms.Compose([
     transforms.RandomResizedCrop(224),
-    Cutout(),
+    # Cutout(),
     # transforms.RandomRotation(15),
     transforms.RandomHorizontalFlip(),
     transforms.ColorJitter(0.4, 0.4, 0.4),
@@ -142,10 +148,18 @@ train_data = DataLoader(ImageNet(args.data_path, split='train', transform=_train
 val_data = DataLoader(ImageNet(args.data_path, split='val', transform=_val_transform),
                       batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
+model_setting = {}
+if args.dropout != 0:
+    model_setting['dropout_rate'] = args.dropout
+if args.norm_layer != '':
+    model_setting['norm_layer'] = SwitchNorm2d
+if args.activation != '':
+    model_setting['activation'] = Swish()
+
 try:
-    model = get_model(args.model, alpha=args.alpha)
+    model = get_model(args.model, alpha=args.alpha, **model_setting)
 except TypeError:
-    model = get_model(args.model)
+    model = get_model(args.model, **model_setting)
 
 if args.sync_bn:
     logger.info('Using Apex Synced BN.')

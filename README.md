@@ -38,7 +38,7 @@ I want to verify them in a fair way.
 
 Tricks: RandomRotation, OctConv[14], Drop out, Label Smoothing[4], Sync BN, SwitchNorm[6], Mixup[5], no decay bias[7], 
 Cutout[5], switch activation[10], Stochastic Depth[9], Lookahead Optimizer[11], Identity Mappings(ResnetV2)[12], 
-DCNv2[13],
+DCNv2[13],LIP[16].
 
 
 Special: Zero-initialize the last BN, just call it 'Zero γ'.
@@ -48,14 +48,16 @@ I know some tricks may need train more time or larger batch size but it's not fa
 You can think of it as a performance in the current situation.
 
 
-|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|top1/top5  |improve |
-|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------:|:------:|
-|resnet50|120  |FP16   |128        | 8    |0.4  | -      |77.35/-    |baseline|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Label smoothing|77.78/93.80 |+0.43 |
-|resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |77.28/93.61*|-0.07 |
-|resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |77.31/93.49^|-0.04 |
-|resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |77.49/93.73 |+0.14 |
-|resnet50|120  |FP16   |128        | 8    |0.4  |RandomRotation |76.64/93.28 |-1.14 |
+|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|degree |top1/top5  |improve |
+|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:-----:|:---------:|:------:|
+|resnet50|120  |FP16   |128        | 8    |0.4  | -      |   -   |77.35/-    |baseline|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Label smoothing|smoothing=0.1|77.78/93.80 |+0.43 |
+|resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |-            |77.28/93.61*|-0.07 |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |-            |77.31/93.49^|-0.04 |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |alpha=0.2    |77.49/93.73 |+0.14 |
+|resnet50|120  |FP16   |128        | 8    |0.4  |RandomRotation |degree=15    |76.64/93.28 |-1.14 |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Cutout         |read code    |77.44/93.62 |+0.09 |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |  |  |
 
 - *If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
     can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
@@ -93,3 +95,4 @@ You can think of it as a performance in the current situation.
 - [13] [Deformable ConvNets v2: More Deformable, Better Results](https://arxiv.org/pdf/1811.11168.pdf)
 - [14] [Drop an Octave: Reducing Spatial Redundancy in Convolutional Neural Networks with Octave Convolution](https://export.arxiv.org/pdf/1904.05049)
 - [15] [Training Neural Nets on Larger Batches: Practical Tips for 1-GPU, Multi-GPU & Distributed setups](https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255)
+- [16] [LIP: Local Importance-based Pooling](https://arxiv.org/pdf/1908.04156v1.pdf)

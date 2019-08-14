@@ -130,7 +130,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.dropout = nn.Dropout(dropout_rate) if dropout_rate is not None else nn.Identity()
+        self.dropout = nn.Dropout(dropout_rate, inplace=True) if dropout_rate is not None else nn.Identity()
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
     def _make_layer(self, block, planes, blocks, stride=1):
