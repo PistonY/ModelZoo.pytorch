@@ -38,7 +38,7 @@ I want to verify them in a fair way.
 
 Tricks: RandomRotation, OctConv[14], Drop out, Label Smoothing[4], Sync BN, SwitchNorm[6], Mixup[5], no decay bias[7], 
 Cutout[5], switch activation[10], Stochastic Depth[9], Lookahead Optimizer[11], Identity Mappings(ResnetV2)[12], 
-DCNv2[13],LIP[16].
+DCNv2[13], LIP[16].
 
 
 Special: Zero-initialize the last BN, just call it 'Zero γ'.
@@ -57,13 +57,14 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |alpha=0.2    |77.49/93.73 |+0.14 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |RandomRotation |degree=15    |76.64/93.28 |-1.14 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Cutout         |read code    |77.44/93.62 |+0.09 |
-|resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |  |  |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |77.11/93.58 |-0.24 |
 
 - *If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
     can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
 - ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
 
 ## ToDo
+- [ ] Resume training
 - [ ] Try Nvidia-DALI
 - [ ] Multi-node(distributed) training by Apex or BytePS
 - [ ] I may try AutoAugment.This project aims to train models by ourselves to observe and learn,
