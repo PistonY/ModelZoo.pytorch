@@ -25,6 +25,7 @@ if you don't want to use it just write them yourself.
 |model | epochs| dtype |batch size*|gpus  | lr  |  tricks|speed|memory cost(MiB)^|top1/top5|
 |:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---:|:--------------:|:-------:|
 |resnet50|120  |FP16   |128        |  8   |0.4  | -      | 950 |   7700         |77.35/-  |
+|resnet50|120  |FP16   |128        |  8   |0.4  | -      | 950 |   7700         |  |
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).

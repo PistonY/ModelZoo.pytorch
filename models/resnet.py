@@ -210,6 +210,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(dropout_rate, inplace=True) if dropout_rate is not None else nn.Identity()
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
@@ -247,7 +248,7 @@ class ResNet(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        x = x.reshape(x.size(0), -1)
+        x = self.flatten(x)
         x = self.dropout(x)
         x = self.fc(x)
 
@@ -287,6 +288,7 @@ class ResNetV2(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.bn_last = norm_layer(512 * block.expansion)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(dropout_rate, inplace=True) if dropout_rate is not None else nn.Identity()
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
@@ -327,7 +329,7 @@ class ResNetV2(nn.Module):
         x = self.act(x)
 
         x = self.avgpool(x)
-        x = x.reshape(x.size(0), -1)
+        x = self.flatten(x)
         x = self.dropout(x)
         x = self.fc(x)
 
