@@ -1,6 +1,6 @@
 __all__ = ['oct_resnet50', 'oct_resnet50v2']
 
-from oct_module import *
+from module import *
 from utils import *
 from torch import nn
 
@@ -66,8 +66,6 @@ class OctBottleneckV2(nn.Module):
         width = int(planes * (base_width / 64.)) * groups
         if stride != 1 or inplanes != planes * self.expansion:
             self.downsample = AdaptiveSequential(
-                fs_bn(inplanes, alpha_in),
-                fs_relu(),
                 OctaveConv(inplanes, planes * self.expansion, alpha_in, alpha_out,
                            1, stride=stride, bias=False),
             )
@@ -105,8 +103,7 @@ class OctBottleneckV2(nn.Module):
 
 
 class OctResNet(nn.Module):
-    def __init__(self, alpha, layers, num_classes=1000, zero_init_residual=False,
-                 groups=1, width_per_group=64):
+    def __init__(self, alpha, layers, num_classes=1000, groups=1, width_per_group=64):
         super(OctResNet, self).__init__()
         self.inplanes = 64
         self.groups = groups
@@ -156,8 +153,7 @@ class OctResNet(nn.Module):
 
 
 class OctResNetV2(nn.Module):
-    def __init__(self, alpha, layers, num_classes=1000, zero_init_residual=False,
-                 groups=1, width_per_group=64):
+    def __init__(self, alpha, layers, num_classes=1000, groups=1, width_per_group=64):
         super().__init__()
         self.inplanes = 64
         self.groups = groups
