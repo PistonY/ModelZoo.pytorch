@@ -10,7 +10,7 @@ import apex
 from torchtoolbox import metric
 from torchtoolbox.transform import Cutout
 from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
-from torchtoolbox.optimizer import CosineWarmupLr
+from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import split_weights, \
     mixup_data, mixup_criterion
@@ -47,14 +47,8 @@ parser.add_argument('--dropout', type=float, default=0.,
                     help='model dropout rate.')
 parser.add_argument('--sync-bn', action='store_true',
                     help='use Apex Sync-BN.')
-# parser.add_argument('--lr-mode', type=str, default='step',
-#                     help='learning rate scheduler mode. options are step, poly and cosine.')
-# parser.add_argument('--lr-decay', type=float, default=0.1,
-#                     help='decay rate of learning rate. default is 0.1.')
-# parser.add_argument('--lr-decay-period', type=int, default=0,
-#                     help='interval for periodic learning rate decays. default is 0 to disable.')
-# parser.add_argument('--lr-decay-epoch', type=str, default='40,60',
-#                     help='epochs at which learning rate decays. default is 40,60.')
+parser.add_argument('--lookahead', action='store_true',
+                    help='use lookahead optimizer.')
 parser.add_argument('--warmup-lr', type=float, default=0.0,
                     help='starting warmup learning rate. default is 0.0.')
 parser.add_argument('--warmup-epochs', type=int, default=0,
@@ -107,6 +101,23 @@ def get_model(name, **kwargs):
     return models.__dict__[name](**kwargs)
 
 
+def set_model(drop_out, norm_layer, act):
+    setting = {}
+    if drop_out != 0:
+        setting['dropout_rate'] = args.dropout
+    if norm_layer != '':
+        if args.norm_layer == 'switch':
+            setting['norm_layer'] = SwitchNorm2d
+        else:
+            raise NotImplementedError
+    if act != '':
+        if args.activation == 'swish':
+            setting['activation'] = Swish()
+        else:
+            raise NotImplementedError
+    return setting
+
+
 classes = 1000
 num_training_samples = 1281167
 
@@ -148,13 +159,7 @@ train_data = DataLoader(ImageNet(args.data_path, split='train', transform=_train
 val_data = DataLoader(ImageNet(args.data_path, split='val', transform=_val_transform),
                       batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
-model_setting = {}
-if args.dropout != 0:
-    model_setting['dropout_rate'] = args.dropout
-if args.norm_layer != '':
-    model_setting['norm_layer'] = SwitchNorm2d
-if args.activation != '':
-    model_setting['activation'] = Swish()
+model_setting = set_model(args.dropout, args.norm_layer, args.activation)
 
 try:
     model = get_model(args.model, alpha=args.alpha, **model_setting)
@@ -162,12 +167,16 @@ except TypeError:
     model = get_model(args.model, **model_setting)
 
 if args.sync_bn:
-    logger.info('Using Apex Synced BN.')
+    logger.info('Use Apex Synced BN.')
     model = apex.parallel.convert_syncbn_model(model)
 
 parameters = model.parameters() if not args.no_wd else split_weights(model)
 optimizer = optim.SGD(parameters, lr=lr, momentum=args.momentum,
                       weight_decay=args.wd, nesterov=True)
+if args.lookahead:
+    logger.info('Use lookahead optimizer.')
+    optimizer = Lookahead(optimizer)
+
 KaimingInitializer(model)
 model.to(device)
 dtype = args.dtype

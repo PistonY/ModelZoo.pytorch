@@ -270,6 +270,7 @@ class ResNetV2(nn.Module):
 
         self.groups = groups
         self.base_width = width_per_group
+
         if small_input:
             self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1,
                                    bias=False)
@@ -299,8 +300,6 @@ class ResNetV2(nn.Module):
 
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                norm_layer(self.inplanes),
-                act,
                 conv1x1(self.inplanes, planes * block.expansion, stride),
             )
 
