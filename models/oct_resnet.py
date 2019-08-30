@@ -1,7 +1,7 @@
 __all__ = ['oct_resnet50', 'oct_resnet50v2']
 
 from module import *
-from utils import *
+from torchtoolbox.nn import AdaptiveSequential
 from torch import nn
 
 

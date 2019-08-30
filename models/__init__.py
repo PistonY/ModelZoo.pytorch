@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
-from .oct_resnet import *
+from .oct_resnet_re import *
 from .resnet import *
 from torchvision.models.alexnet import *
 from torchvision.models.densenet import *
