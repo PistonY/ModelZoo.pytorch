@@ -113,6 +113,8 @@ def set_model(drop_out, norm_layer, act):
     if act != '':
         if args.activation == 'swish':
             setting['activation'] = Swish()
+        elif args.activation == 'relu6':
+            setting['activation'] = nn.ReLU6(inplace=True)
         else:
             raise NotImplementedError
     return setting

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 """This file is totally same as oct_resnet, I just want to avoid if/else in forward."""
+
 __all__ = ['OctResnet', 'oct_resnet50', 'oct_resnet101', 'oct_resnet152',
            'oct_resnet50_32x4d', 'oct_resnet101_32x8d']
 

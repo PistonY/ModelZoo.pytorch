@@ -9,7 +9,7 @@ try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 ### Environment
 - OS: Ubuntu 18.04
 - CUDA: 10.0, CuDNN: 7.5
-- Devices: I use 8 * RTX 2080ti(8 * V100 should be much better /cry). This project is under FP16, it's recommend to use FP16 friendly devices like 
+- Devices: I use 8 * RTX 2080ti(8 * V100 should be much better /cry). This project is in FP16 precision, it's recommend to use FP16 friendly devices like 
 RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me.
 
 ### Requirement
@@ -22,15 +22,16 @@ if you don't want to use it just write them yourself.
 
 ## Baseline models
 
-|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|speed|memory cost(MiB)^|top1/top5 |
-|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---:|:--------------:|:---------:|
-|resnet50|120  |FP16   |128        |  8   |0.4  | -      | -   |   7700         |77.36/-    |
-|resnet50v2|120  |FP16 |128        |  8   |0.4  | -      | -   |   7700         |77.06/93.44|
+|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|memory cost(MiB)^|top1/top5  |
+|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------------:|:---------:|
+|resnet50|120  |FP16   |128        |  8   |0.4  | -      |   7700          |77.36/-    |
+|resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10341         |78.02/93.89|
+|resnet50v2|120|FP16   |128        |  8   |0.4  | -      |   7700          |77.06/93.44|
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
 - ^This is average memory cost.
-- Resnet 50 top5 in log file is not right(actually is top -5), just ignore it.
+- Resnet50 top5 in log file is not right(actually is top -5), just ignore it.
 
 ## Ablation Study on Tricks
 Here are lots of tricks to improve accuracy during this years.(If you have another idea please open an issue.)
@@ -38,7 +39,7 @@ I want to verify them in a fair way.
 
 
 Tricks: RandomRotation, OctConv[14], Drop out, Label Smoothing[4], Sync BN, SwitchNorm[6], Mixup[17], no decay bias[7], 
-Cutout[5], swish activation[10], Stochastic Depth[9], Lookahead Optimizer[11], Pre-active(ResnetV2)[12], 
+Cutout[5], Relu6[18], swish activation[10], Stochastic Depth[9], Lookahead Optimizer[11], Pre-active(ResnetV2)[12],
 DCNv2[13], LIP[16].
 
 
@@ -60,13 +61,14 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Cutout         |read code    |77.44/93.62 |+0.08 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |77.11/93.58 |-0.25 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Lookahead-SGD  |    -        |77.23/93.39 |-0.13 |
-|resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |  -          |77.06/93.44 |-0.30 |
+|resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44~|-0.30 |
 
 
-- *If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
+- *:If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
     can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
-- ^Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
-
+- ^:Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
+- More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
+- ~:50 layers are not long enough for pre-active.
 
 ## ToDo
 - [ ] Resume training
