@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
+__all__ = ['FairNasA', 'FairNasB', 'FairNasC']
 
 from torch import nn
 

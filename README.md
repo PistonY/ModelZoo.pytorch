@@ -1,6 +1,6 @@
 # ModelZoo for Pytorch
 
-This is a model zoo project under Pytorch. In this repo I will implement some of basic classification 
+This is a model zoo project under Pytorch. In this repo I will implement some of basic classification
 models which have good performance on ImageNet. Then I will train them in most fair way as possible and
 try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 
@@ -14,8 +14,8 @@ RTX series, V100. If you want to totally reproduce my research, you'd better use
 
 ### Requirement
 - Pytorch: >= 1.1.0
-- [Apex](https://github.com/NVIDIA/apex): nightly version. Support optimized FP16 tools. 
-- [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version. 
+- [Apex](https://github.com/NVIDIA/apex): nightly version. Support optimized FP16 tools.
+- [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version.
 Helper functions to make your code simpler and more readable, it's a optional tools
 if you don't want to use it just write them yourself.
 
@@ -25,8 +25,10 @@ if you don't want to use it just write them yourself.
 |model | epochs| dtype |batch size*|gpus  | lr  |  tricks|memory cost(MiB)^|top1/top5  |
 |:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------------:|:---------:|
 |resnet50|120  |FP16   |128        |  8   |0.4  | -      |   7700          |77.36/-    |
-|resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10341         |78.02/93.89|
+|resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10300         |79.13/94.38|
 |resnet50v2|120|FP16   |128        |  8   |0.4  | -      |   7700          |77.06/93.44|
+|resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|
+
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
@@ -43,7 +45,7 @@ Cutout[5], Relu6[18], swish activation[10], Stochastic Depth[9], Lookahead Optim
 DCNv2[13], LIP[16].
 
 
-Special: Zero-initialize the last BN, just call it 'Zero γ'.
+Special: Zero-initialize the last BN, just call it 'Zero γ', only for post-active model.
 
 I'll only use 120 epochs and 128*8 batch size to train them.
 I know some tricks may need train more time or larger batch size but it's not fair for others.
@@ -62,13 +64,14 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |77.11/93.58 |-0.25 |
 |resnet50|120  |FP16   |128        | 8    |0.4  |Lookahead-SGD  |    -        |77.23/93.39 |-0.13 |
 |resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44~|-0.30 |
+|oct_resnet50|120  |FP16 |128      | 8    |0.4  |OctConv        |alpha=0.125  |-|-|
 
 
 - *:If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
     can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
 - ^:Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
 - More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
-- ~:50 layers are not long enough for pre-active.
+- ~:50 layers may not long enough for pre-active.
 
 ## ToDo
 - [ ] Resume training

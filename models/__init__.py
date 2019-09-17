@@ -3,6 +3,7 @@
 
 from .oct_resnet_re import *
 from .resnet import *
+from .fairnet import *
 from torchvision.models.alexnet import *
 from torchvision.models.densenet import *
 from torchvision.models.googlenet import *

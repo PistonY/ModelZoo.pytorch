@@ -74,7 +74,7 @@ class OctBottleneck_First(nn.Module):
         x_h, x_l = self.bn3(x_h, x_l)
 
         y_h, y_l = self.relu(x_h + r_h, x_l + r_l)
-        # print(y_h.shape, y_l.shape)
+
         return y_h, y_l
 
 
