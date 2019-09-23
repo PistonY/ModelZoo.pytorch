@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
+
 # init DALI
 try:
     import nvidia.dali as dali
@@ -15,18 +16,19 @@ class TrainPipe(dali.pipeline.Pipeline):
         dali_device = 'cpu' if use_cpu else 'gpu'
         decoder_device = 'cpu' if use_cpu else 'mixed'
 
-        # device_memory_padding = 211025920 if decoder_device == 'mixed' else 0
-        # host_memory_padding = 140544512 if decoder_device == 'mixed' else 0
+        device_memory_padding = 211025920 if decoder_device == 'mixed' else 0
+        host_memory_padding = 140544512 if decoder_device == 'mixed' else 0
 
         self.input = dali.ops.FileReader(file_root=data_dir, shard_id=device_id, num_shards=1,
                                          shuffle_after_epoch=True)
 
         self.decode = dali.ops.ImageDecoderRandomCrop(device=decoder_device, output_type=dali.types.RGB,
-                                                      # device_memory_padding=device_memory_padding,
-                                                      # host_memory_padding=host_memory_padding,
+                                                      device_memory_padding=device_memory_padding,
+                                                      host_memory_padding=host_memory_padding,
                                                       num_attempts=100)
 
-        self.res = dali.ops.Resize(device=dali_device, resize_x=crop, resize_y=crop, interp_type=dali.types.INTERP_TRIANGULAR)
+        self.res = dali.ops.Resize(device=dali_device, resize_x=crop, resize_y=crop,
+                                   interp_type=dali.types.INTERP_TRIANGULAR)
 
         self.bri = dali.ops.Brightness(device=dali_device)
         self.con = dali.ops.Contrast(device=dali_device)
