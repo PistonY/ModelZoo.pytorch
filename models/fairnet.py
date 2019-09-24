@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
-__all__ = ['FairNasA', 'FairNasB', 'FairNasC']
+__all__ = ['FairNasA', 'FairNasB', 'FairNasC',
+           'InvertedResidual']
 
 from torch import nn
 
@@ -74,6 +75,7 @@ class FairNasA(nn.Module):
             nn.BatchNorm2d(1280),
             nn.ReLU6(inplace=True),
             nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
         )
         self.output = nn.Linear(1280, num_classes)
 
@@ -81,7 +83,6 @@ class FairNasA(nn.Module):
         x = self.first_block(x)
         x = self.mb_blocks(x)
         x = self.last_block(x)
-        x = x.view(x.size(0), -1)
         x = self.output(x)
         return x
 
@@ -125,6 +126,7 @@ class FairNasB(nn.Module):
             nn.BatchNorm2d(1280),
             nn.ReLU6(inplace=True),
             nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
         )
         self.output = nn.Linear(1280, num_classes)
 
@@ -132,7 +134,6 @@ class FairNasB(nn.Module):
         x = self.first_block(x)
         x = self.mb_blocks(x)
         x = self.last_block(x)
-        x = x.view(x.size(0), -1)
         x = self.output(x)
         return x
 
@@ -176,6 +177,7 @@ class FairNasC(nn.Module):
             nn.BatchNorm2d(1280),
             nn.ReLU6(inplace=True),
             nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
         )
         self.output = nn.Linear(1280, num_classes)
 
@@ -183,6 +185,5 @@ class FairNasC(nn.Module):
         x = self.first_block(x)
         x = self.mb_blocks(x)
         x = self.last_block(x)
-        x = x.view(x.size(0), -1)
         x = self.output(x)
         return x

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
-import argparse, time, logging
+import argparse, time, logging, os
 import models
 import torch
 import warnings
 import apex
+from torch.utils.data import DistributedSampler
 
 from torchtoolbox import metric
 from torchtoolbox.transform import Cutout
@@ -14,6 +15,7 @@ from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import split_weights, \
     mixup_data, mixup_criterion
+from torchtoolbox.data import ImageLMDB
 
 from torchvision import transforms
 from torchvision.datasets import ImageNet
@@ -27,6 +29,8 @@ from apex import amp
 parser = argparse.ArgumentParser(description='Train a model on ImageNet.')
 parser.add_argument('--data-path', type=str, required=True,
                     help='training and validation dataset.')
+parser.add_argument('--use-lmdb', action='store_true',
+                    help='use LMDB dataset/format')
 parser.add_argument('--batch-size', type=int, default=32,
                     help='training batch size per device (CPU/GPU).')
 parser.add_argument('--dtype', type=str, default='float32',
@@ -81,6 +85,7 @@ parser.add_argument('--log-interval', type=int, default=50,
                     help='Number of batches to wait before logging.')
 parser.add_argument('--logging-file', type=str, default='train_imagenet.log',
                     help='name of training log file')
+parser.add_argument("--local_rank", default=0, type=int)
 args = parser.parse_args()
 
 filehandler = logging.FileHandler(args.logging_file)
@@ -156,10 +161,18 @@ _val_transform = transforms.Compose([
     normalize,
 ])
 
-train_data = DataLoader(ImageNet(args.data_path, split='train', transform=_train_transform),
-                        batch_size, True, pin_memory=True, num_workers=num_workers, drop_last=True)
-val_data = DataLoader(ImageNet(args.data_path, split='val', transform=_val_transform),
-                      batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
+torch.distributed.init_process_group(backend="nccl")
+if not args.use_lmdb:
+    train_set = ImageNet(args.data_path, split='train', transform=_train_transform)
+    val_set = ImageNet(args.data_path, split='val', transform=_val_transform)
+else:
+    train_set = ImageLMDB(os.path.join(args.data_path, 'train.lmdb'), transform=_train_transform)
+    val_set = ImageLMDB(os.path.join(args.data_path, 'val.lmdb'), transform=_val_transform)
+
+train_sampler = DistributedSampler(train_set)
+train_data = DataLoader(train_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=True,
+                        sampler=train_sampler)
+val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
 model_setting = set_model(args.dropout, args.norm_layer, args.activation)
 
@@ -187,7 +200,9 @@ if dtype == 'float16':
     logger.info('Train with FP16.')
     model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
 
-model = nn.DataParallel(model, device_ids=device_ids)
+# model = nn.DataParallel(model, device_ids=device_ids)
+
+model = nn.parallel.DistributedDataParallel(model)
 
 lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
                               base_lr=args.lr, warmup_epochs=args.warmup_epochs)
@@ -228,6 +243,7 @@ def test(epoch=0, save_status=True):
 
 def train():
     for epoch in range(epochs):
+        train_sampler.set_epoch(epoch)
         top1_acc.reset()
         loss_record.reset()
         tic = time.time()
@@ -267,6 +283,7 @@ def train():
 def train_mixup():
     mixup_off_epoch = epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
     for epoch in range(epochs):
+        train_sampler.set_epoch(epoch)
         loss_record.reset()
         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
         tic = time.time()
