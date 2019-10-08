@@ -66,7 +66,7 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Lookahead-SGD  |    -        |77.23/93.39 |-0.13 |
 |resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44~|-0.30 |
 |oct_resnet50|120  |FP16 |128      | 8    |0.4  |OctConv        |alpha=0.125  |-|-|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Relu6          |   ~~****~~ -        | | |
+|resnet50|120  |FP16   |128        | 8    |0.4  |Relu6          |             |77.28/93.5  |-0.08 |
 
 
 - *:If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 

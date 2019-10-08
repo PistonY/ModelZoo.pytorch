@@ -200,8 +200,6 @@ if dtype == 'float16':
     logger.info('Train with FP16.')
     model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
 
-# model = nn.DataParallel(model, device_ids=device_ids)
-
 model = nn.parallel.DistributedDataParallel(model)
 
 lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,

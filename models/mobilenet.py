@@ -115,6 +115,7 @@ class MobileNetV1(nn.Module):
         x = self.mb_block(x)
         x = self.last_block(x)
         x = self.output(x)
+        return x
 
 
 class MobileNetV2(nn.Module):

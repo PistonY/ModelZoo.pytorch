@@ -6,6 +6,7 @@ from .resnet import *
 from .fairnet import *
 from .mobilenet import *
 from .proxyless_nas import *
+from .efficientnet import *
 from torchvision.models.alexnet import *
 from torchvision.models.densenet import *
 from torchvision.models.googlenet import *
