@@ -256,7 +256,6 @@ class ResNet(nn.Module):
 
 
 class ResNetV2(nn.Module):
-
     def __init__(self, block, layers, num_classes=1000, groups=1, width_per_group=64,
                  norm_layer=None, activation=None, dropout_rate=None, small_input=False):
         super(ResNetV2, self).__init__()

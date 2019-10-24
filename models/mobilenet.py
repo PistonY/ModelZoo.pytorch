@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 class h_swish(nn.Module):
     def __init__(self, inplace=False):
+        super(h_swish, self).__init__()
         self.inplace = inplace
 
     def forward(self, x):
@@ -17,6 +18,7 @@ class h_swish(nn.Module):
 
 class h_sigmoid(nn.Module):
     def __init__(self, inplace=False):
+        super(h_sigmoid, self).__init__()
         self.inplace = inplace
 
     def forward(self, x):
@@ -88,7 +90,7 @@ class MobileNetV1(nn.Module):
             nn.ReLU(inplace=True),
         )
         MB1_Bottleneck = partial(MobileNetBottleneck, first_conv=False,
-                                 relu6=False, skip=False, linear=False)
+                                 activation='relu', skip=False, linear=False)
         self.mb_block = nn.Sequential(
             MB1_Bottleneck(32, 1, 64, 3, 1),
             MB1_Bottleneck(64, 1, 128, 3, 2),
@@ -187,7 +189,7 @@ class MobileNetV3_Large(nn.Module):
             MobileNetBottleneck(80, 2.3, 80, 3, 1, False, 'h_swish'),
             MobileNetBottleneck(80, 6, 112, 3, 1, True, 'h_swish'),
             MobileNetBottleneck(112, 6, 112, 3, 1, True, 'h_swish'),
-            MobileNetBottleneck(80, 6, 160, 5, 1, True, 'h_swish'),
+            MobileNetBottleneck(112, 6, 160, 5, 1, True, 'h_swish'),
             MobileNetBottleneck(160, 4.2, 160, 5, 2, True, 'h_swish'),
             MobileNetBottleneck(160, 6, 160, 5, 1, True, 'h_swish'),
         )

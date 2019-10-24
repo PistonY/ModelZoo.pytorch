@@ -19,6 +19,12 @@ RTX series, V100. If you want to totally reproduce my research, you'd better use
 Helper functions to make your code simpler and more readable, it's a optional tools
 if you don't want to use it just write them yourself.
 
+### LMDB Dataset
+- Not necessary.
+
+If you found any IO bottleneck please use LMDB format dataset. A good way is try both and find out
+which is more faster.
+
 
 ## Baseline models
 
@@ -28,6 +34,9 @@ if you don't want to use it just write them yourself.
 |resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10300         |79.13/94.38|
 |resnet50v2|120|FP16   |128        |  8   |0.4  | -      |   7700          |77.06/93.44|
 |resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|
+|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|
+|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|
+|mobilenetv3|150|FP16  |256        |  8   |0.4  | -      |   8800          |71.94/90.59|
 
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
