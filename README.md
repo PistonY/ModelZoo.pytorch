@@ -55,6 +55,7 @@ Cutout[5], Relu6[18], ~~swish activation[10]~~, Stochastic Depth[9], Lookahead O
 ~~DCNv2[13]~~, LIP[16].
 
 - Delete line means make me out of memory.
+
 Special: Zero-initialize the last BN, just call it 'Zero γ', only for post-active model.
 
 I'll only use 120 epochs and 128*8 batch size to train them.
