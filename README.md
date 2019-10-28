@@ -50,11 +50,11 @@ Here are lots of tricks to improve accuracy during this years.(If you have anoth
 I want to verify them in a fair way.
 
 
-Tricks: RandomRotation, OctConv[14], Drop out, Label Smoothing[4], Sync BN, SwitchNorm[6], Mixup[17], no decay bias[7], 
-Cutout[5], Relu6[18], swish activation[10], Stochastic Depth[9], Lookahead Optimizer[11], Pre-active(ResnetV2)[12],
-DCNv2[13], LIP[16].
+Tricks: RandomRotation, OctConv[14], Drop out, Label Smoothing[4], Sync BN, ~~SwitchNorm[6]~~, Mixup[17], no decay bias[7], 
+Cutout[5], Relu6[18], ~~swish activation[10]~~, Stochastic Depth[9], Lookahead Optimizer[11], Pre-active(ResnetV2)[12],
+~~DCNv2[13]~~, LIP[16].
 
-
+- Delete line means make me out of memory.
 Special: Zero-initialize the last BN, just call it 'Zero γ', only for post-active model.
 
 I'll only use 120 epochs and 128*8 batch size to train them.
