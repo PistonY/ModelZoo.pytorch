@@ -7,39 +7,6 @@ try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 Actually it's a little early to open this in public.But I've stuck in MobileNetV3 for a while.
 I'll upload all pre-trained models and logs later.
 
-## Usage
-### Environment
-- OS: Ubuntu 18.04
-- CUDA: 10.1, CuDNN: 7.6
-- Devices: I use 8 * RTX 2080ti(8 * V100 should be much better /cry). This project is in FP16 precision, it's recommend to use FP16 friendly devices like 
-RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me.
-
-### Requirement
-- Pytorch: >= 1.1.0
-- [Apex](https://github.com/NVIDIA/apex): nightly version. Support optimized FP16 tools.
-- [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version.
-Helper functions to make your code simpler and more readable, it's a optional tools
-if you don't want to use it just write them yourself.
-
-### LMDB Dataset
-- Not necessary.
-
-If you found any IO bottleneck please use LMDB format dataset. A good way is try both and find out
-which is more faster.
-
-I provide conversion script [here](scripts/generate_LMDB_dataset.py).
-
-### Train script
-```shell
-python -u -m torch.distributed.launch train_script.py --params
-```
-Here is a example
-```shell
-python -u -m torch.distributed.launch train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-lmdb \
-       --batch-size 256 --dtype float16 --devices 0,1,2,3,4,5,6,7 -j 12 --epochs 150 --lr 2.6 --warmup-epochs 5 \ 
-       --wd 0.00003 --model MobileNetV3_Large --log-interval 150
-```
-
 ## Baseline models
 
 |model | epochs| dtype |batch size*|gpus  | lr  |  tricks|memory cost(MiB)^|top1/top5  |params/logs|
@@ -101,6 +68,39 @@ You can think of it as a performance in the current situation.
 - ^:Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
 - More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
 - ~:50 layers may not long enough for pre-active.
+
+## Usage
+### Environment
+- OS: Ubuntu 18.04
+- CUDA: 10.1, CuDNN: 7.6
+- Devices: I use 8 * RTX 2080ti(8 * V100 should be much better /cry). This project is in FP16 precision, it's recommend to use FP16 friendly devices like 
+RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me.
+
+### Requirement
+- Pytorch: >= 1.1.0
+- [Apex](https://github.com/NVIDIA/apex): nightly version. Support optimized FP16 tools.
+- [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version.
+Helper functions to make your code simpler and more readable, it's a optional tools
+if you don't want to use it just write them yourself.
+
+### LMDB Dataset
+- Not necessary.
+
+If you found any IO bottleneck please use LMDB format dataset. A good way is try both and find out
+which is more faster.
+
+I provide conversion script [here](scripts/generate_LMDB_dataset.py).
+
+### Train script
+```shell
+python -u -m torch.distributed.launch train_script.py --params
+```
+Here is a example
+```shell
+python -u -m torch.distributed.launch train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-lmdb \
+       --batch-size 256 --dtype float16 --devices 0,1,2,3,4,5,6,7 -j 12 --epochs 150 --lr 2.6 --warmup-epochs 5 \ 
+       --wd 0.00003 --model MobileNetV3_Large --log-interval 150
+```
 
 ## ToDo
 - [ ] Resume training
