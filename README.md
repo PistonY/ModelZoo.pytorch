@@ -42,14 +42,14 @@ python -u -m torch.distributed.launch train_script.py --params --data-path /home
 
 ## Baseline models
 
-|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|memory cost(MiB)^|top1/top5  |
-|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------------:|:---------:|
-|resnet50|120  |FP16   |128        |  8   |0.4  | -      |   7700          |77.36/-    |
-|resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10300         |79.13/94.38|
-|resnet50v2|120|FP16   |128        |  8   |0.4  | -      |   7700          |77.06/93.44|
-|resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|
-|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|
-|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|
+|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|memory cost(MiB)^|top1/top5  |params/logs|
+|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------------:|:---------:|:---------:|
+|resnet50|120  |FP16   |128        |  8   |0.4  | -      |   7700          |77.36/-    |[Google Drive](https://drive.google.com/drive/folders/1orshUNj-4LroO2q-vyd45c_Iz7alQ50M?usp=sharing)|
+|resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10300         |79.13/94.38|[Google Drive](https://drive.google.com/drive/folders/1nmdpX39_9KidxxUXuL0uDYpDGjavQS0M?usp=sharing)|
+|resnet50v2|120|FP16   |128        |  8   |0.4  | -      |   7700          |77.06/93.44|[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
+|resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
+|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
+|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
 |mobilenetv3|150|FP16  |256        |  8   |0.4  | -      |   8800          |-/-|
 
 
