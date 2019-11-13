@@ -4,11 +4,13 @@ This is a model zoo project under Pytorch. In this repo I will implement some of
 models which have good performance on ImageNet. Then I will train them in most fair way as possible and
 try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 
+Actually it's a little early to open this in public.But I've stuck in MobileNetV3 for a while.
+I'll upload all pre-trained models and logs later.
 
 ## Usage
 ### Environment
 - OS: Ubuntu 18.04
-- CUDA: 10.0, CuDNN: 7.5
+- CUDA: 10.1, CuDNN: 7.6
 - Devices: I use 8 * RTX 2080ti(8 * V100 should be much better /cry). This project is in FP16 precision, it's recommend to use FP16 friendly devices like 
 RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me.
 
@@ -25,6 +27,18 @@ if you don't want to use it just write them yourself.
 If you found any IO bottleneck please use LMDB format dataset. A good way is try both and find out
 which is more faster.
 
+I provide conversion script [here](scripts/generate_LMDB_dataset.py).
+
+### Train script
+```shell
+python -u -m torch.distributed.launch train_script.py --params
+```
+Here is a example
+```shell
+python -u -m torch.distributed.launch train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-lmdb \
+       --batch-size 256 --dtype float16 --devices 0,1,2,3,4,5,6,7 -j 12 --epochs 150 --lr 2.6 --warmup-epochs 5 \ 
+       --wd 0.00003 --model MobileNetV3_Large --log-interval 150
+```
 
 ## Baseline models
 
@@ -36,13 +50,16 @@ which is more faster.
 |resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|
 |mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|
 |mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|
-|mobilenetv3|150|FP16  |256        |  8   |0.4  | -      |   8800          |71.94/90.59|
+|mobilenetv3|150|FP16  |256        |  8   |0.4  | -      |   8800          |-/-|
 
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
 - ^This is average memory cost.
 - Resnet50 top5 in log file is not right(actually is top -5), just ignore it.
+
+## Optimized Models(with tricks)
+- In progress.
 
 ## Ablation Study on Tricks
 

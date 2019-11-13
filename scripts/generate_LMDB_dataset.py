@@ -2,6 +2,7 @@
 # @Author  : DevinYang(pistonyang@gmail.com)
 import argparse
 from torchvision.datasets import ImageNet
+from torchtoolbox.tools import check_dir
 from torchtoolbox.tools.convert_lmdb import generate_lmdb_dataset, raw_reader
 
 parser = argparse.ArgumentParser(description='Convert a ImageFolder dataset to LMDB format.')
@@ -21,6 +22,7 @@ parser.add_argument('--max-size', type=float, default=1.0,
 
 args = parser.parse_args()
 split = 'train' if args.train else 'val'
+check_dir(args.save_dir)
 data_set = ImageNet(args.data_dir, split, args.download, loader=raw_reader)
 
 if __name__ == '__main__':

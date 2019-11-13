@@ -13,7 +13,7 @@ from torchtoolbox.transform import Cutout
 from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
-from torchtoolbox.tools import split_weights, \
+from torchtoolbox.tools import no_decay_bias, \
     mixup_data, mixup_criterion
 from torchtoolbox.data import ImageLMDB
 
@@ -23,6 +23,7 @@ from torch.utils.data import DataLoader
 from torch import nn
 from torch import optim
 from apex import amp
+from apex.optimizers import FusedSGD
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -135,11 +136,12 @@ device = torch.device("cuda:0")
 device_ids = args.devices.strip().split(',')
 device_ids = [int(device) for device in device_ids]
 
-lr = 0.1 * (args.batch_size // 32) if args.lr == 0 else args.lr
-batch_size = args.batch_size * len(device_ids)
+dtype = args.dtype
 epochs = args.epochs
-batches_pre_epoch = num_training_samples // batch_size
 num_workers = args.num_workers
+batch_size = args.batch_size * len(device_ids)
+batches_pre_epoch = num_training_samples // batch_size
+lr = 0.1 * (args.batch_size // 32) if args.lr == 0 else args.lr
 
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
@@ -181,27 +183,26 @@ try:
 except TypeError:
     model = get_model(args.model, **model_setting)
 
+KaimingInitializer(model)
+model.to(device)
+parameters = model.parameters() if not args.no_wd else no_decay_bias(model)
+optimizer = optim.SGD(parameters, lr=lr, momentum=args.momentum,
+                      weight_decay=args.wd, nesterov=True)
 if args.sync_bn:
     logger.info('Use Apex Synced BN.')
     model = apex.parallel.convert_syncbn_model(model)
 
-parameters = model.parameters() if not args.no_wd else split_weights(model)
-optimizer = optim.SGD(parameters, lr=lr, momentum=args.momentum,
-                      weight_decay=args.wd, nesterov=True)
+if dtype == 'float16':
+    logger.info('Train with FP16.')
+    # optimizer = FusedSGD(parameters, lr=lr, momentum=args.momentum,
+    #                      weight_decay=args.wd, nesterov=True)
+    model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
+
 if args.lookahead:
     logger.info('Use lookahead optimizer.')
     optimizer = Lookahead(optimizer)
 
-KaimingInitializer(model)
-model.to(device)
-dtype = args.dtype
-
-if dtype == 'float16':
-    logger.info('Train with FP16.')
-    model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
-
 model = nn.parallel.DistributedDataParallel(model)
-
 lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
                               base_lr=args.lr, warmup_epochs=args.warmup_epochs)
 
