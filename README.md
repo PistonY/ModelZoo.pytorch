@@ -93,11 +93,11 @@ I provide conversion script [here](scripts/generate_LMDB_dataset.py).
 
 ### Train script
 ```shell
-python -u -m torch.distributed.launch train_script.py --params
+python train_script.py --params
 ```
 Here is a example
 ```shell
-python -u -m torch.distributed.launch train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-lmdb \
+python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-lmdb \
        --batch-size 256 --dtype float16 --devices 0,1,2,3,4,5,6,7 -j 12 --epochs 150 --lr 2.6 --warmup-epochs 5 \ 
        --wd 0.00003 --model MobileNetV3_Large --log-interval 150
 ```
