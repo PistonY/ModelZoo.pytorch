@@ -188,9 +188,6 @@ model.to(device)
 parameters = model.parameters() if not args.no_wd else no_decay_bias(model)
 optimizer = optim.SGD(parameters, lr=lr, momentum=args.momentum,
                       weight_decay=args.wd, nesterov=True)
-model = nn.parallel.DistributedDataParallel(model)
-lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
-                              base_lr=args.lr, warmup_epochs=args.warmup_epochs)
 
 if args.sync_bn:
     logger.info('Use Apex Synced BN.')
@@ -203,6 +200,10 @@ if dtype == 'float16':
 if args.lookahead:
     logger.info('Use lookahead optimizer.')
     optimizer = Lookahead(optimizer)
+
+model = nn.parallel.DistributedDataParallel(model)
+lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
+                              base_lr=args.lr, warmup_epochs=args.warmup_epochs)
 
 top1_acc = metric.Accuracy(name='Top1 Accuracy')
 top5_acc = metric.TopKAccuracy(top=5, name='Top5 Accuracy')
