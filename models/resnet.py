@@ -264,12 +264,10 @@ class ResNetV2(nn.Module):
         if activation is None:
             activation = nn.ReLU(inplace=True)
         self._norm_layer = norm_layer
-
         self.inplanes = 64
 
         self.groups = groups
         self.base_width = width_per_group
-
         if small_input:
             self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=1, padding=1,
                                    bias=False)

@@ -23,7 +23,6 @@ from torch.utils.data import DataLoader
 from torch import nn
 from torch import optim
 from apex import amp
-from apex.optimizers import FusedSGD
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 

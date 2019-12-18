@@ -29,9 +29,9 @@ class se_module(nn.Module):
     def __init__(self, channels, reduction=4):
         super(se_module, self).__init__()
         self.out = nn.Sequential(
-            nn.Conv2d(channels, channels // reduction, 1),
+            nn.Conv2d(channels, channels // reduction, 1, bias=True),
             nn.ReLU(inplace=True),
-            nn.Conv2d(channels // reduction, channels, 1),
+            nn.Conv2d(channels // reduction, channels, 1, bias=True),
             h_sigmoid()
         )
 
@@ -65,10 +65,11 @@ class MobileNetBottleneck(nn.Module):
                              kernel_size // 2, groups=hidden_c, bias=False))
         seq.append(nn.BatchNorm2d(hidden_c))
         seq.append(self.act)
+        if se:
+            seq.append(se_module(hidden_c))
         seq.append(nn.Conv2d(hidden_c, out_c, 1, 1, bias=False))
         seq.append(nn.BatchNorm2d(out_c))
-        if se:
-            seq.append(se_module(out_c))
+
         self.seq = nn.Sequential(*seq)
 
     def forward(self, x):

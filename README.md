@@ -7,67 +7,6 @@ try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 Actually it's a little early to open this in public.But I've stuck in MobileNetV3 for a while.
 I'll upload all pre-trained models and logs later.
 
-## Baseline models
-
-|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|memory cost(MiB)^|top1/top5  |params/logs|
-|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------------:|:---------:|:---------:|
-|resnet50|120  |FP16   |128        |  8   |0.4  | -      |   7700          |77.36/-    |[Google Drive](https://drive.google.com/drive/folders/1orshUNj-4LroO2q-vyd45c_Iz7alQ50M?usp=sharing)|
-|resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10300         |79.13/94.38|[Google Drive](https://drive.google.com/drive/folders/1nmdpX39_9KidxxUXuL0uDYpDGjavQS0M?usp=sharing)|
-|resnet50v2|120|FP16   |128        |  8   |0.4  | -      |   7700          |77.06/93.44|[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
-|resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
-|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
-|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
-|mobilenetv3|150|FP16  |256        |  8   |0.4  | -      |   8800          |-/-|
-
-
-- I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
-- *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
-- ^This is average memory cost.
-- Resnet50 top5 in log file is not right(actually is top -5), just ignore it.
-
-## Optimized Models(with tricks)
-- In progress.
-
-## Ablation Study on Tricks
-
-Here are lots of tricks to improve accuracy during this years.(If you have another idea please open an issue.)
-I want to verify them in a fair way.
-
-
-Tricks: RandomRotation, OctConv[14], Drop out, Label Smoothing[4], Sync BN, ~~SwitchNorm[6]~~, Mixup[17], no decay bias[7], 
-Cutout[5], Relu6[18], ~~swish activation[10]~~, Stochastic Depth[9], Lookahead Optimizer[11], Pre-active(ResnetV2)[12],
-~~DCNv2[13]~~, LIP[16].
-
-- Delete line means make me out of memory.
-
-Special: Zero-initialize the last BN, just call it 'Zero γ', only for post-active model.
-
-I'll only use 120 epochs and 128*8 batch size to train them.
-I know some tricks may need train more time or larger batch size but it's not fair for others.
-You can think of it as a performance in the current situation.
-
-
-|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|degree|top1/top5  |improve |params/logs|
-|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:----:|:---------:|:------:|:----:|
-|resnet50|120  |FP16   |128        | 8    |0.4  | -      |   -  |77.36/-    |baseline|[Google Drive](https://drive.google.com/drive/folders/1orshUNj-4LroO2q-vyd45c_Iz7alQ50M?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Label smoothing|smoothing=0.1|77.78/93.80 |**+0.42** |[Google Drive](https://drive.google.com/drive/folders/1CO8Fmbiy1TgEvdpU-KKV7AHIa7EanaqG?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |-            |77.28/93.61*|-0.08 |[Google Drive](https://drive.google.com/drive/folders/1oYC3EjLn-2nnWrS_UrhaP_3YY3uhWzhz?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |-            |77.31/93.49^|-0.05 |[Google Drive](https://drive.google.com/drive/folders/1QW2LSl7JsTcnCGM289N9wA-xkjkuhBvg?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |alpha=0.2    |77.49/93.73 |**+0.13** |missing|
-|resnet50|120  |FP16   |128        | 8    |0.4  |RandomRotation |degree=15    |76.64/93.28 |-1.15 |[Google Drive](https://drive.google.com/drive/folders/1FYmTVStop4VT5LA9RCPUbWPnzGsEJoCy?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Cutout         |read code    |77.44/93.62 |**+0.08** |[Google Drive](https://drive.google.com/drive/folders/1HhDTDkj6Zg_oJT-5TQZu1RP-CYs1fr3U?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |77.11/93.58 |-0.25 |[Google Drive](https://drive.google.com/drive/folders/1sA6e8sewz-Za6ySUUJcLpiTjV9V1Fk8f?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Lookahead-SGD  |    -        |77.23/93.39 |-0.13 |[Google Drive](https://drive.google.com/drive/folders/1gC8pD7CDDQ7haBKhNBNqj8i9Xsk3cNla?usp=sharing)|
-|resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44~|-0.30 |[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
-|oct_resnet50|120  |FP16 |128      | 8    |0.4  |OctConv        |alpha=0.125  |-|-||
-|resnet50|120  |FP16   |128        | 8    |0.4  |Relu6          |             |77.28/93.5  |-0.08 |[Google Drive](https://drive.google.com/drive/folders/1en9SQq2ZeswaZoTiYDAR_vQS3YAJU5gq?usp=sharing)|
-
-
-- *:If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
-    can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
-- ^:Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
-- More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
-- ~:50 layers may not long enough for pre-active.
 
 ## Usage
 ### Environment
@@ -109,6 +48,28 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 - [ ] I may try AutoAugment.This project aims to train models by ourselves to observe and learn,
      it's impossible for me to train this, just copy feels meaningless.
 
+## Baseline models
+
+|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|memory cost(MiB)^|top1/top5  |params/logs|
+|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:---------------:|:---------:|:---------:|
+|resnet50|120  |FP16   |128        |  8   |0.4  | -      |   7700          |77.36/-    |[Google Drive](https://drive.google.com/drive/folders/1orshUNj-4LroO2q-vyd45c_Iz7alQ50M?usp=sharing)|
+|resnet101|120 |FP16   |128        |  8   |0.4  | -      |   10300         |79.13/94.38|[Google Drive](https://drive.google.com/drive/folders/1nmdpX39_9KidxxUXuL0uDYpDGjavQS0M?usp=sharing)|
+|resnet50v2|120|FP16   |128        |  8   |0.4  | -      |   7700          |77.06/93.44|[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
+|resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
+|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
+|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
+|mobilenetv3|150|FP16  |256        |  8   |0.4  | -      |   8800          |-/-|
+
+
+- I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
+- *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
+- ^This is average memory cost.
+- Resnet50 top5 in log file is not right(actually is top -5), just ignore it.
+
+## Optimized Models(with tricks)
+- In progress.
+
+
 ## Citation
 ```
 @misc{ModelZoo.pytorch,
@@ -118,6 +79,47 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
   year = {2019}
   }
 ```
+
+## Ablation Study on Tricks
+
+Here are lots of tricks to improve accuracy during this years.(If you have another idea please open an issue.)
+I want to verify them in a fair way.
+
+
+Tricks: RandomRotation, OctConv[14], Drop out, Label Smoothing[4], Sync BN, ~~SwitchNorm[6]~~, Mixup[17], no decay bias[7], 
+Cutout[5], Relu6[18], ~~swish activation[10]~~, Stochastic Depth[9], Lookahead Optimizer[11], Pre-active(ResnetV2)[12],
+~~DCNv2[13]~~, LIP[16].
+
+- Delete line means make me out of memory.
+
+Special: Zero-initialize the last BN, just call it 'Zero γ', only for post-active model.
+
+I'll only use 120 epochs and 128*8 batch size to train them.
+I know some tricks may need train more time or larger batch size but it's not fair for others.
+You can think of it as a performance in the current situation.
+
+
+|model | epochs| dtype |batch size*|gpus  | lr  |  tricks|degree|top1/top5  |improve |params/logs|
+|:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:----:|:---------:|:------:|:----:|
+|resnet50|120  |FP16   |128        | 8    |0.4  | -      |   -  |77.36/-    |baseline|[Google Drive](https://drive.google.com/drive/folders/1orshUNj-4LroO2q-vyd45c_Iz7alQ50M?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Label smoothing|smoothing=0.1|77.78/93.80 |**+0.42** |[Google Drive](https://drive.google.com/drive/folders/1CO8Fmbiy1TgEvdpU-KKV7AHIa7EanaqG?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |-            |77.28/93.61*|-0.08 |[Google Drive](https://drive.google.com/drive/folders/1oYC3EjLn-2nnWrS_UrhaP_3YY3uhWzhz?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |-            |77.31/93.49^|-0.05 |[Google Drive](https://drive.google.com/drive/folders/1QW2LSl7JsTcnCGM289N9wA-xkjkuhBvg?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |alpha=0.2    |77.49/93.73 |**+0.13** |missing|
+|resnet50|120  |FP16   |128        | 8    |0.4  |RandomRotation |degree=15    |76.64/93.28 |-1.15 |[Google Drive](https://drive.google.com/drive/folders/1FYmTVStop4VT5LA9RCPUbWPnzGsEJoCy?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Cutout         |read code    |77.44/93.62 |**+0.08** |[Google Drive](https://drive.google.com/drive/folders/1HhDTDkj6Zg_oJT-5TQZu1RP-CYs1fr3U?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |77.11/93.58 |-0.25 |[Google Drive](https://drive.google.com/drive/folders/1sA6e8sewz-Za6ySUUJcLpiTjV9V1Fk8f?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Lookahead-SGD  |    -        |77.23/93.39 |-0.13 |[Google Drive](https://drive.google.com/drive/folders/1gC8pD7CDDQ7haBKhNBNqj8i9Xsk3cNla?usp=sharing)|
+|resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44~|-0.30 |[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
+|oct_resnet50|120  |FP16 |128      | 8    |0.4  |OctConv        |alpha=0.125  |-|-||
+|resnet50|120  |FP16   |128        | 8    |0.4  |Relu6          |             |77.28/93.5  |-0.08 |[Google Drive](https://drive.google.com/drive/folders/1en9SQq2ZeswaZoTiYDAR_vQS3YAJU5gq?usp=sharing)|
+
+
+- *:If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
+    can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
+- ^:Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
+- More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
+- ~:50 layers may not long enough for pre-active.
 
 ## Reference
 - [1] [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385.pdf)
