@@ -85,6 +85,10 @@ parser.add_argument('--log-interval', type=int, default=50,
                     help='Number of batches to wait before logging.')
 parser.add_argument('--logging-file', type=str, default='train_imagenet.log',
                     help='name of training log file')
+parser.add_argument('--resume-epoch', type=int, default=0,
+                    help='epoch to resume training from.')
+parser.add_argument('--resume-param', type=str, default='',
+                    help='resume training param path.')
 parser.add_argument("--local_rank", default=0, type=int)
 args = parser.parse_args()
 
@@ -137,6 +141,7 @@ device_ids = [int(device) for device in device_ids]
 
 dtype = args.dtype
 epochs = args.epochs
+resume_epoch = args.resume_epoch
 num_workers = args.num_workers
 batch_size = args.batch_size * len(device_ids)
 batches_pre_epoch = num_training_samples // batch_size
@@ -203,6 +208,12 @@ if args.lookahead:
 model = nn.DataParallel(model)
 lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
                               base_lr=args.lr, warmup_epochs=args.warmup_epochs)
+if resume_epoch > 0:
+    checkpoint = torch.load(args.resume_param)
+    model.load_state_dict(checkpoint['model'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    amp.load_state_dict(checkpoint['amp'])
+    lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
 
 top1_acc = metric.Accuracy(name='Top1 Accuracy')
 top5_acc = metric.TopKAccuracy(top=5, name='Top5 Accuracy')
@@ -234,12 +245,18 @@ def test(epoch=0, save_status=True):
         loss_record.name, loss_record.get())
     logger.info(test_msg)
     if save_status:
-        torch.save(model.state_dict(), '{}/{}_{}_{:.5}.pkl'.format(
+        checkpoint = {
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'amp': amp.state_dict(),
+            'lr_scheduler': lr_scheduler.state_dict(),
+        }
+        torch.save(checkpoint, '{}/{}_{}_{:.5}.pkl'.format(
             args.save_dir, args.model, epoch, top1_acc.get()))
 
 
 def train():
-    for epoch in range(epochs):
+    for epoch in range(resume_epoch, epochs):
         # train_sampler.set_epoch(epoch)
         top1_acc.reset()
         loss_record.reset()
@@ -279,7 +296,7 @@ def train():
 
 def train_mixup():
     mixup_off_epoch = epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
-    for epoch in range(epochs):
+    for epoch in range(resume_epoch, epochs):
         # train_sampler.set_epoch(epoch)
         loss_record.reset()
         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
