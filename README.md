@@ -42,7 +42,7 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 ```
 
 ## ToDo
-- [ ] Resume training
+- [x] Resume training
 - ~~Try Nvidia-DALI~~
 - [ ] Multi-node(distributed) training by Apex or BytePS
 - [ ] I may try AutoAugment.This project aims to train models by ourselves to observe and learn,
