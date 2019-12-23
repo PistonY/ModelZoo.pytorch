@@ -167,7 +167,7 @@ _val_transform = transforms.Compose([
     normalize,
 ])
 
-# torch.distributed.init_process_group(backend="nccl")
+torch.distributed.init_process_group(backend="nccl")
 if not args.use_lmdb:
     train_set = ImageNet(args.data_path, split='train', transform=_train_transform)
     val_set = ImageNet(args.data_path, split='val', transform=_val_transform)
@@ -175,7 +175,7 @@ else:
     train_set = ImageLMDB(os.path.join(args.data_path, 'train.lmdb'), transform=_train_transform)
     val_set = ImageLMDB(os.path.join(args.data_path, 'val.lmdb'), transform=_val_transform)
 
-# train_sampler = DistributedSampler(train_set)
+train_sampler = DistributedSampler(train_set)
 train_data = DataLoader(train_set, batch_size, True, pin_memory=True, num_workers=num_workers, drop_last=True)
 val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
@@ -204,8 +204,8 @@ if args.lookahead:
     logger.info('Use lookahead optimizer.')
     optimizer = Lookahead(optimizer)
 
-# model = nn.parallel.DistributedDataParallel(model)
-model = nn.DataParallel(model)
+model = nn.parallel.DistributedDataParallel(model)
+# model = nn.DataParallel(model)
 lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
                               base_lr=args.lr, warmup_epochs=args.warmup_epochs)
 if resume_epoch > 0:
@@ -251,13 +251,13 @@ def test(epoch=0, save_status=True):
             'amp': amp.state_dict(),
             'lr_scheduler': lr_scheduler.state_dict(),
         }
-        torch.save(checkpoint, '{}/{}_{}_{:.5}.pkl'.format(
+        torch.save(checkpoint, '{}/{}_{}_{:.5}.pt'.format(
             args.save_dir, args.model, epoch, top1_acc.get()))
 
 
 def train():
     for epoch in range(resume_epoch, epochs):
-        # train_sampler.set_epoch(epoch)
+        train_sampler.set_epoch(epoch)
         top1_acc.reset()
         loss_record.reset()
         tic = time.time()
@@ -297,7 +297,7 @@ def train():
 def train_mixup():
     mixup_off_epoch = epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
     for epoch in range(resume_epoch, epochs):
-        # train_sampler.set_epoch(epoch)
+        train_sampler.set_epoch(epoch)
         loss_record.reset()
         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
         tic = time.time()
