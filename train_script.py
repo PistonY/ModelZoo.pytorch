@@ -175,7 +175,7 @@ else:
     train_set = ImageLMDB(os.path.join(args.data_path, 'train.lmdb'), transform=_train_transform)
     val_set = ImageLMDB(os.path.join(args.data_path, 'val.lmdb'), transform=_val_transform)
 
-train_sampler = DistributedSampler(train_set)
+# train_sampler = DistributedSampler(train_set)
 train_data = DataLoader(train_set, batch_size, True, pin_memory=True, num_workers=num_workers, drop_last=True)
 val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
@@ -257,7 +257,7 @@ def test(epoch=0, save_status=True):
 
 def train():
     for epoch in range(resume_epoch, epochs):
-        train_sampler.set_epoch(epoch)
+        # train_sampler.set_epoch(epoch)
         top1_acc.reset()
         loss_record.reset()
         tic = time.time()
@@ -297,7 +297,7 @@ def train():
 def train_mixup():
     mixup_off_epoch = epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
     for epoch in range(resume_epoch, epochs):
-        train_sampler.set_epoch(epoch)
+        # train_sampler.set_epoch(epoch)
         loss_record.reset()
         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
         tic = time.time()
