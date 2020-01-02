@@ -14,7 +14,7 @@ from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
-    mixup_data, mixup_criterion
+    mixup_data, mixup_criterion, check_dir
 from torchtoolbox.data import ImageLMDB
 
 from torchvision import transforms
@@ -132,6 +132,7 @@ def set_model(drop_out, norm_layer, act):
 classes = 1000
 num_training_samples = 1281167
 
+check_dir(args.save_dir)
 assert torch.cuda.is_available(), \
     "Please don't waste of your time,it's impossible to train on CPU."
 

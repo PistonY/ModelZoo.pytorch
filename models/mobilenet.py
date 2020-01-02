@@ -33,7 +33,6 @@ class HardSigmoid(nn.Module):
 class SE_Module(nn.Module):
     def __init__(self, channels, reduction=4):
         super(SE_Module, self).__init__()
-        print(channels // reduction)
         reduction_c = make_divisible(channels // reduction)
         self.out = nn.Sequential(
             nn.Conv2d(channels, reduction_c, 1, bias=True),
