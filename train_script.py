@@ -151,7 +151,7 @@ lr = 0.1 * (args.batch_size // 32) if args.lr == 0 else args.lr
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])
 
-_train_transform = transforms.Compose([
+train_transform = transforms.Compose([
     transforms.RandomResizedCrop(224),
     # Cutout(),
     # transforms.RandomRotation(15),
@@ -161,7 +161,7 @@ _train_transform = transforms.Compose([
     normalize,
 ])
 
-_val_transform = transforms.Compose([
+val_transform = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
     transforms.ToTensor(),
@@ -170,14 +170,15 @@ _val_transform = transforms.Compose([
 
 torch.distributed.init_process_group(backend="nccl")
 if not args.use_lmdb:
-    train_set = ImageNet(args.data_path, split='train', transform=_train_transform)
-    val_set = ImageNet(args.data_path, split='val', transform=_val_transform)
+    train_set = ImageNet(args.data_path, split='train', transform=train_transform)
+    val_set = ImageNet(args.data_path, split='val', transform=val_transform)
 else:
-    train_set = ImageLMDB(os.path.join(args.data_path, 'train.lmdb'), transform=_train_transform)
-    val_set = ImageLMDB(os.path.join(args.data_path, 'val.lmdb'), transform=_val_transform)
+    train_set = ImageLMDB(os.path.join(args.data_path, 'train.lmdb'), transform=train_transform)
+    val_set = ImageLMDB(os.path.join(args.data_path, 'val.lmdb'), transform=val_transform)
 
-# train_sampler = DistributedSampler(train_set)
-train_data = DataLoader(train_set, batch_size, True, pin_memory=True, num_workers=num_workers, drop_last=True)
+train_sampler = DistributedSampler(train_set)
+train_data = DataLoader(train_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=True,
+                        sampler=train_sampler)
 val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
 model_setting = set_model(args.dropout, args.norm_layer, args.activation)
@@ -258,7 +259,7 @@ def test(epoch=0, save_status=True):
 
 def train():
     for epoch in range(resume_epoch, epochs):
-        # train_sampler.set_epoch(epoch)
+        train_sampler.set_epoch(epoch)
         top1_acc.reset()
         loss_record.reset()
         tic = time.time()
@@ -298,7 +299,7 @@ def train():
 def train_mixup():
     mixup_off_epoch = epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
     for epoch in range(resume_epoch, epochs):
-        # train_sampler.set_epoch(epoch)
+        train_sampler.set_epoch(epoch)
         loss_record.reset()
         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
         tic = time.time()

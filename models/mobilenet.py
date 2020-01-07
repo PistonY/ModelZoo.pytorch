@@ -216,7 +216,7 @@ class MobileNetV3_Large(nn.Module):
             nn.BatchNorm2d(960),
             HardSwish(inplace=True),
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(960, 1280, 1),
+            nn.Conv2d(960, 1280, 1, bias=False),
             HardSwish(),
             nn.Flatten(),
         )

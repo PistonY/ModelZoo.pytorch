@@ -1,2 +1,9 @@
 distribute_train_script.py
-test/*
+test/
+.idea/
+__pycache__/
+models/__pycache__/
+module/__pycache__/
+params/
+test.py
+train_imagenet.log
