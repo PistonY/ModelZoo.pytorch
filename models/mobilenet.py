@@ -187,7 +187,7 @@ class MobileNetV2(nn.Module):
 
 
 class MobileNetV3_Large(nn.Module):
-    def __init__(self, num_classes=1000, small_input=False):
+    def __init__(self, num_classes=1000, small_input=False, dropout_rate=0.2):
         super(MobileNetV3_Large, self).__init__()
         self.first_block = nn.Sequential(
             nn.Conv2d(3, 16, 3, 2 if not small_input else 1, 1, bias=False),
@@ -218,6 +218,7 @@ class MobileNetV3_Large(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(960, 1280, 1, bias=False),
             HardSwish(),
+            nn.Dropout2d(p=dropout_rate, inplace=True),
             nn.Flatten(),
         )
         self.output = nn.Linear(1280, num_classes)
@@ -231,7 +232,7 @@ class MobileNetV3_Large(nn.Module):
 
 
 class MobileNetV3_Small(nn.Module):
-    def __init__(self, num_classes=1000, small_input=False):
+    def __init__(self, num_classes=1000, small_input=False, dropout_rate=0.2):
         super(MobileNetV3_Small, self).__init__()
         self.first_block = nn.Sequential(
             nn.Conv2d(3, 16, 3, 2 if not small_input else 1, 1, bias=False),
@@ -258,6 +259,7 @@ class MobileNetV3_Small(nn.Module):
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(576, 1280, 1),
             HardSwish(),
+            nn.Dropout2d(p=dropout_rate, inplace=True),
             nn.Flatten(),
         )
         self.output = nn.Linear(1280, num_classes)

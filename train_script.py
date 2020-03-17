@@ -24,7 +24,7 @@ from torch import nn
 from torch import optim
 from apex import amp
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 
 parser = argparse.ArgumentParser(description='Train a model on ImageNet.')
 parser.add_argument('--data-path', type=str, required=True,
@@ -216,6 +216,7 @@ if resume_epoch > 0:
     optimizer.load_state_dict(checkpoint['optimizer'])
     amp.load_state_dict(checkpoint['amp'])
     lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+    print("Finish loading resume param.")
 
 top1_acc = metric.Accuracy(name='Top1 Accuracy')
 top5_acc = metric.TopKAccuracy(top=5, name='Top5 Accuracy')
