@@ -143,13 +143,11 @@ def main():
     logger.info(args)
 
     check_dir(args.save_dir)
-    # if args.dist_url == "env://" and args.world_size == -1:
-    #     args.world_size = int(os.environ["WORLD_SIZE"])
+
     assert args.world_size >= 1
 
-    # args.distributed = args.world_size > 1 or args.multiprocessing_distributed
-    # assert args.distributed, "This script is for distributed training, " \
-    #                          "please enable 'multiprocessing_distributed' if you have multiple GPUs"
+    args.classes = 1000
+    args.num_training_samples = 1281167
     ngpus_per_node = torch.cuda.device_count()
     args.world_size = ngpus_per_node * args.world_size
     mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
@@ -162,17 +160,11 @@ def main_worker(gpu, ngpus_per_node, args):
     args.rank = args.rank * ngpus_per_node + gpu
     torch.distributed.init_process_group(backend="nccl", init_method=args.dist_url,
                                          world_size=args.world_size, rank=args.rank)
-    classes = 1000
-    args.num_training_samples = 1281167
-
-    # device = torch.device("cuda:0")
-    # device_ids = args.devices.strip().split(',')
-    # device_ids = [int(device) for device in device_ids]
 
     dtype = args.dtype
     epochs = args.epochs
     resume_epoch = args.resume_epoch
-    batches_pre_epoch = args.num_training_samples // args.batch_size
+    batches_pre_epoch = args.num_training_samples // (args.batch_size * ngpus_per_node)
     lr = 0.1 * (args.batch_size * ngpus_per_node // 32) if args.lr == 0 else args.lr
 
     model_setting = set_model(args.dropout, args.norm_layer, args.activation, args)
@@ -204,11 +196,11 @@ def main_worker(gpu, ngpus_per_node, args):
     if dtype == 'float16':
         print('Train with FP16.')
         model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
-    # model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-    model = DDP(model, delay_allreduce=True)
+    model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+    # model = DDP(model, delay_allreduce=True)
 
     Loss = nn.CrossEntropyLoss().cuda(args.gpu) if not args.label_smoothing else \
-        LabelSmoothingLoss(classes, smoothing=0.1).cuda(args.gpu)
+        LabelSmoothingLoss(args.classes, smoothing=0.1).cuda(args.gpu)
 
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
@@ -253,14 +245,15 @@ def main_worker(gpu, ngpus_per_node, args):
 
     torch.backends.cudnn.benchmark = True
 
-    # top1_acc = metric.Accuracy(name='Top1 Accuracy')
-    # top5_acc = metric.TopKAccuracy(top=5, name='Top5 Accuracy')
-    # loss_record = metric.NumericalCost(name='Loss')
-
     for epoch in range(resume_epoch, epochs):
-
+        tic = time.time()
         train_sampler.set_epoch(epoch)
-        train_one_epoch(model, train_loader, Loss, optimizer, epoch, lr_scheduler, args)
+        if not args.mixup:
+            train_one_epoch(model, train_loader, Loss, optimizer, epoch, lr_scheduler, args)
+        else:
+            train_one_epoch_mixup(model, train_loader, Loss, optimizer, epoch, lr_scheduler, args)
+        train_speed = int(args.num_training_samples // (time.time() - tic))
+        print('Finish one epoch speed: {} samples/s'.format(train_speed))
         top1_acc = test(model, val_loader, Loss, epoch, args)
 
         if args.rank % ngpus_per_node == 0:
@@ -291,11 +284,10 @@ def test(model, val_loader, criterion, epoch, args):
         top5_acc.step(outputs, labels)
         loss_record.step(losses)
 
-    if args.rank == 0:
-        test_msg = 'Test Epoch {}: {}:{:.5}, {}:{:.5}, {}:{:.5}\n'.format(
-            epoch, top1_acc.name, top1_acc.get(), top5_acc.name, top5_acc.get(),
-            loss_record.name, loss_record.get())
-        print(test_msg)
+    test_msg = 'Test Epoch {}: {}:{:.5}, {}:{:.5}, {}:{:.5}\n'.format(
+        epoch, top1_acc.name, top1_acc.get(), top5_acc.name, top5_acc.get(),
+        loss_record.name, loss_record.get())
+    print(test_msg)
     return top1_acc.get()
 
 
@@ -329,55 +321,37 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_schedul
                 lr_scheduler.learning_rate
             ))
 
-    # train_speed = int(args.num_training_samples // (time.time() - tic))
-    # epoch_msg = 'Train Epoch {}: {}:{:.5}, {}:{:.5}, {} samples/s.'.format(
-    #     epoch, top1_acc.name, top1_acc.get(), loss_record.name, loss_record.get(), train_speed)
-    # logger.info(epoch_msg)
 
+def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_scheduler, args):
+    loss_record = metric.NumericalCost(name='Loss')
+    mixup_off_epoch = args.epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
 
-# def train_mixup():
-#     mixup_off_epoch = epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
-#     for epoch in range(resume_epoch, epochs):
-#         train_sampler.set_epoch(epoch)
-#         loss_record.reset()
-#         alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
-#         tic = time.time()
-#
-#         model.train()
-#         for i, (data, labels) in enumerate(train_data):
-#             data = data.to(device, non_blocking=True)
-#             labels = labels.to(device, non_blocking=True)
-#
-#             data, labels_a, labels_b, lam = mixup_data(data, labels, alpha)
-#             optimizer.zero_grad()
-#             outputs = model(data)
-#             loss = mixup_criterion(Loss, outputs, labels_a, labels_b, lam)
-#
-#             with amp.scale_loss(loss, optimizer) as scaled_loss:
-#                 scaled_loss.backward()
-#             optimizer.step()
-#
-#             loss_record.step(loss)
-#             lr_scheduler.step()
-#
-#             if i % args.log_interval == 0 and i != 0:
-#                 logger.info('Epoch {}, Iter {}, {}:{:.5}, {} samples/s.'.format(
-#                     epoch, i, loss_record.name, loss_record.get(),
-#                     int((i * batch_size) // (time.time() - tic))
-#                 ))
-#
-#         train_speed = int(num_training_samples // (time.time() - tic))
-#         train_msg = 'Train Epoch {}: {}:{:.5}, {} samples/s, lr:{:.5}'.format(
-#             epoch, loss_record.name, loss_record.get(),
-#             train_speed, lr_scheduler.learning_rate)
-#         logger.info(train_msg)
-#         test(epoch)
+    alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
+    tic = time.time()
+
+    model.train()
+    for i, (data, labels) in enumerate(train_loader):
+        data = data.cuda(args.gpu, non_blocking=True)
+        labels = labels.cuda(args.gpu, non_blocking=True)
+
+        data, labels_a, labels_b, lam = mixup_data(data, labels, alpha)
+        optimizer.zero_grad()
+        outputs = model(data)
+        loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+
+        with amp.scale_loss(loss, optimizer) as scaled_loss:
+            scaled_loss.backward()
+        optimizer.step()
+
+        loss_record.step(loss)
+        lr_scheduler.step()
+
+        if i % args.log_interval == 0 and i != 0:
+            print('Epoch {}, Iter {}, {}:{:.5}, {} samples/s.'.format(
+                epoch, i, loss_record.name, loss_record.get(),
+                int((i * args.batch_size) // (time.time() - tic))
+            ))
 
 
 if __name__ == '__main__':
-    # if args.mixup:
-    #     logger.info('Train using Mixup.')
-    #     train_mixup()
-    # else:
-    #     train()
     main()
