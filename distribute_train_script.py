@@ -6,7 +6,8 @@ import models
 import torch
 import warnings
 import apex
-from torch.utils.data import DistributedSampler
+
+from cloghandler import ConcurrentRotatingFileHandler
 
 from torchtoolbox import metric
 from torchtoolbox.transform import Cutout
@@ -14,12 +15,13 @@ from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
-    mixup_data, mixup_criterion, check_dir
+    mixup_data, mixup_criterion, check_dir, summary
 from torchtoolbox.data import ImageLMDB
 
 from torchvision.datasets import ImageNet
 from torch import multiprocessing as mp
 from torch.utils.data import DataLoader
+from torch.utils.data import DistributedSampler
 from torchvision import transforms
 from torch import nn
 from torch import optim
@@ -79,19 +81,23 @@ parser.add_argument('--no-wd', action='store_true',
                     help='whether to remove weight decay on bias, and beta/gamma for batchnorm layers.')
 parser.add_argument('--save-dir', type=str, default='params',
                     help='directory of saved models')
+parser.add_argument('--model-info', action='store_true',
+                    help='show model information.')
+parser.add_argument('--apex-ddp', action='store_true',
+                    help='use APEX `DistributedDataParallel`')
 parser.add_argument('--log-interval', type=int, default=50,
                     help='Number of batches to wait before logging.')
-parser.add_argument('--logging-file', type=str, default='train_imagenet.log',
+parser.add_argument('--logging-file', type=str, default='distribute_train_imagenet.log',
                     help='name of training log file')
 parser.add_argument('--resume-epoch', type=int, default=0,
                     help='epoch to resume training from.')
 parser.add_argument('--resume-param', type=str, default='',
                     help='resume training param path.')
-parser.add_argument('--dist-url', default='tcp://127.0.0.1:FREEPORT', type=str,
+parser.add_argument('--dist-url', default='tcp://127.0.0.1:6852', type=str,
                     help='url used to set up distributed training')
-parser.add_argument("--rank", default=-1, type=int,
+parser.add_argument("--rank", required=True, type=int,
                     help='node rank for distributed training')
-parser.add_argument('--world-size', default=-1, type=int,
+parser.add_argument('--world-size', required=True, type=int,
                     help='number of nodes for distributed training')
 # Default enable
 # parser.add_argument('--multiprocessing-distributed', action='store_true',
@@ -128,32 +134,37 @@ def set_model(drop_out, norm_layer, act, args):
     return setting
 
 
-def main():
-    args = parser.parse_args()
-
-    filehandler = logging.FileHandler(args.logging_file)
+def get_logger(args):
+    # filehandler = logging.FileHandler(args.logging_file)
+    filehandler = ConcurrentRotatingFileHandler(args.logging_file)
     streamhandler = logging.StreamHandler()
 
-    logger = logging.getLogger('')
+    logger = logging.getLogger('Distribute training logs.')
     logger.setLevel(logging.INFO)
     logger.addHandler(filehandler)
     logger.addHandler(streamhandler)
-    logger.info(args)
+    return logger
 
+
+def main():
+    args = parser.parse_args()
+    logger = get_logger(args)
+    logger.info(args)
     check_dir(args.save_dir)
 
     assert args.world_size >= 1
 
     args.classes = 1000
     args.num_training_samples = 1281167
+    args.world = args.rank
     ngpus_per_node = torch.cuda.device_count()
     args.world_size = ngpus_per_node * args.world_size
-    mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
+    mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, logger, args))
 
 
-def main_worker(gpu, ngpus_per_node, args):
+def main_worker(gpu, ngpus_per_node, logger, args):
     args.gpu = gpu
-    print("Use GPU: {} for training".format(args.gpu))
+    logger.info("Use GPU: {} for training".format(args.gpu))
 
     args.rank = args.rank * ngpus_per_node + gpu
     torch.distributed.init_process_group(backend="nccl", init_method=args.dist_url,
@@ -161,6 +172,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     dtype = args.dtype
     epochs = args.epochs
+    input_size = args.input_size
     resume_epoch = args.resume_epoch
     batches_pre_epoch = args.num_training_samples // (args.batch_size * ngpus_per_node)
     lr = 0.1 * (args.batch_size * ngpus_per_node // 32) if args.lr == 0 else args.lr
@@ -172,10 +184,13 @@ def main_worker(gpu, ngpus_per_node, args):
     except TypeError:
         model = get_model(args.model, **model_setting)
 
+    if args.rank % ngpus_per_node == 0 and args.model_info:
+        summary(model, torch.rand((1, 3, input_size, input_size)))
+
     KaimingInitializer(model)
 
     if args.sync_bn:
-        print('Use Apex Synced BN.')
+        logger.info('Use Apex Synced BN.')
         model = apex.parallel.convert_syncbn_model(model)
 
     parameters = model.parameters() if not args.no_wd else no_decay_bias(model)
@@ -184,7 +199,7 @@ def main_worker(gpu, ngpus_per_node, args):
     lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
                                   base_lr=args.lr, warmup_epochs=args.warmup_epochs)
     if args.lookahead:
-        print('Use lookahead optimizer.')
+        logger.info('Use lookahead optimizer.')
         optimizer = Lookahead(optimizer)
 
     torch.cuda.set_device(args.gpu)
@@ -192,10 +207,13 @@ def main_worker(gpu, ngpus_per_node, args):
     args.num_workers = int((args.num_workers + ngpus_per_node - 1) / ngpus_per_node)
 
     if dtype == 'float16':
-        print('Train with FP16.')
+        logger.info('Train with FP16.')
         model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
-    model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-    # model = DDP(model, delay_allreduce=True)
+
+    if args.apex_ddp:
+        model = DDP(model, delay_allreduce=True)
+    else:
+        model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
 
     Loss = nn.CrossEntropyLoss().cuda(args.gpu) if not args.label_smoothing else \
         LabelSmoothingLoss(args.classes, smoothing=0.1).cuda(args.gpu)
@@ -204,7 +222,7 @@ def main_worker(gpu, ngpus_per_node, args):
                                      std=[0.229, 0.224, 0.225])
 
     train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(224),
+        transforms.RandomResizedCrop(input_size),
         # Cutout(),
         # transforms.RandomRotation(15),
         transforms.RandomHorizontalFlip(),
@@ -214,8 +232,8 @@ def main_worker(gpu, ngpus_per_node, args):
     ])
 
     val_transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
+        transforms.Resize(int(input_size / 0.875)),
+        transforms.CenterCrop(input_size),
         transforms.ToTensor(),
         normalize,
     ])
@@ -244,16 +262,22 @@ def main_worker(gpu, ngpus_per_node, args):
 
     torch.backends.cudnn.benchmark = True
 
+    top1_acc = metric.Accuracy(name='Top1 Accuracy')
+    top5_acc = metric.TopKAccuracy(top=5, name='Top5 Accuracy')
+    loss_record = metric.NumericalCost(name='Loss')
+
     for epoch in range(resume_epoch, epochs):
         tic = time.time()
         train_sampler.set_epoch(epoch)
         if not args.mixup:
-            train_one_epoch(model, train_loader, Loss, optimizer, epoch, lr_scheduler, args)
+            train_one_epoch(model, train_loader, Loss, optimizer, epoch, lr_scheduler,
+                            logger, top1_acc, top5_acc, args)
         else:
-            train_one_epoch_mixup(model, train_loader, Loss, optimizer, epoch, lr_scheduler, args)
+            train_one_epoch_mixup(model, train_loader, Loss, optimizer, epoch, lr_scheduler,
+                                  logger, loss_record, args)
         train_speed = int(args.num_training_samples // (time.time() - tic))
-        print('Finish one epoch speed: {} samples/s'.format(train_speed))
-        top1_acc = test(model, val_loader, Loss, epoch, args)
+        logger.info('Finish one epoch speed: {} samples/s'.format(train_speed))
+        test(model, val_loader, Loss, epoch, logger, top1_acc, top5_acc, loss_record, args)
 
         if args.rank % ngpus_per_node == 0:
             checkpoint = {
@@ -263,14 +287,15 @@ def main_worker(gpu, ngpus_per_node, args):
                 'lr_scheduler': lr_scheduler.state_dict(),
             }
             torch.save(checkpoint, '{}/{}_{}_{:.5}.pt'.format(
-                args.save_dir, args.model, epoch, top1_acc))
+                args.save_dir, args.model, epoch, top1_acc.get()))
 
 
 @torch.no_grad()
-def test(model, val_loader, criterion, epoch, args):
-    top1_acc = metric.Accuracy(name='Top1 Accuracy')
-    top5_acc = metric.TopKAccuracy(top=5, name='Top5 Accuracy')
-    loss_record = metric.NumericalCost(name='Loss')
+def test(model, val_loader, criterion, epoch, logger, top1_acc, top5_acc, loss_record, args):
+    top1_acc.reset()
+    top5_acc.reset()
+    loss_record.reset()
+
     model.eval()
     for data, labels in val_loader:
         data = data.cuda(args.gpu, non_blocking=True)
@@ -283,16 +308,16 @@ def test(model, val_loader, criterion, epoch, args):
         top5_acc.step(outputs, labels)
         loss_record.step(losses)
 
-    test_msg = 'Test Epoch {}: {}:{:.5}, {}:{:.5}, {}:{:.5}\n'.format(
-        epoch, top1_acc.name, top1_acc.get(), top5_acc.name, top5_acc.get(),
-        loss_record.name, loss_record.get())
-    print(test_msg)
-    return top1_acc.get()
+    test_msg = 'Test Epoch {}, World {}, GPU {}: {}:{:.5}, {}:{:.5}, {}:{:.5}\n'.format(
+        epoch, args.world, args.gpu, top1_acc.name, top1_acc.get(), top5_acc.name,
+        top5_acc.get(), loss_record.name, loss_record.get())
+    logger.info(test_msg)
 
 
-def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_scheduler, args):
-    top1_acc = metric.Accuracy(name='Top1 Accuracy')
-    loss_record = metric.NumericalCost(name='Loss')
+def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_scheduler,
+                    logger, top1_acc, loss_record, args):
+    top1_acc.reset()
+    loss_record.reset()
     tic = time.time()
 
     model.train()
@@ -313,16 +338,17 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_schedul
         loss_record.step(loss)
 
         if i % args.log_interval == 0 and i != 0:
-            print('Epoch {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s. lr: {:.5}.'.format(
-                epoch, i, top1_acc.name, top1_acc.get(),
+            logger.info('Epoch {}, World {}, GPU {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s. lr: {:.5}.'.format(
+                epoch, args.world, args.gpu, i, top1_acc.name, top1_acc.get(),
                 loss_record.name, loss_record.get(),
                 int((i * args.batch_size) // (time.time() - tic)),
                 lr_scheduler.learning_rate
             ))
 
 
-def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_scheduler, args):
-    loss_record = metric.NumericalCost(name='Loss')
+def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_scheduler,
+                          logger, loss_record, args):
+    loss_record.reset()
     mixup_off_epoch = args.epochs if args.mixup_off_epoch == 0 else args.mixup_off_epoch
 
     alpha = args.mixup_alpha if epoch < mixup_off_epoch else 0
@@ -346,8 +372,8 @@ def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_s
         lr_scheduler.step()
 
         if i % args.log_interval == 0 and i != 0:
-            print('Epoch {}, Iter {}, {}:{:.5}, {} samples/s.'.format(
-                epoch, i, loss_record.name, loss_record.get(),
+            logger.info('Epoch {}, World {}, GPU {}, Iter {}, {}:{:.5}, {} samples/s.'.format(
+                epoch, args.world, args.gpu, i, loss_record.name, loss_record.get(),
                 int((i * args.batch_size) // (time.time() - tic))
             ))
 
