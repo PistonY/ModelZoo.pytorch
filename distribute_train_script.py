@@ -93,7 +93,7 @@ parser.add_argument('--resume-epoch', type=int, default=0,
                     help='epoch to resume training from.')
 parser.add_argument('--resume-param', type=str, default='',
                     help='resume training param path.')
-parser.add_argument('--dist-url', default='tcp://127.0.0.1:6852', type=str,
+parser.add_argument('--dist-url', default='tcp://127.0.0.1:26548', type=str,
                     help='url used to set up distributed training')
 parser.add_argument("--rank", required=True, type=int,
                     help='node rank for distributed training')
@@ -135,7 +135,6 @@ def set_model(drop_out, norm_layer, act, args):
 
 
 def get_logger(args):
-    # filehandler = logging.FileHandler(args.logging_file)
     filehandler = ConcurrentRotatingFileHandler(args.logging_file)
     streamhandler = logging.StreamHandler()
 
@@ -159,11 +158,12 @@ def main():
     args.world = args.rank
     ngpus_per_node = torch.cuda.device_count()
     args.world_size = ngpus_per_node * args.world_size
-    mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, logger, args))
+    mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
 
 
-def main_worker(gpu, ngpus_per_node, logger, args):
+def main_worker(gpu, ngpus_per_node, args):
     args.gpu = gpu
+    logger = get_logger(args)
     logger.info("Use GPU: {} for training".format(args.gpu))
 
     args.rank = args.rank * ngpus_per_node + gpu
@@ -271,7 +271,7 @@ def main_worker(gpu, ngpus_per_node, logger, args):
         train_sampler.set_epoch(epoch)
         if not args.mixup:
             train_one_epoch(model, train_loader, Loss, optimizer, epoch, lr_scheduler,
-                            logger, top1_acc, top5_acc, args)
+                            logger, top1_acc, loss_record, args)
         else:
             train_one_epoch_mixup(model, train_loader, Loss, optimizer, epoch, lr_scheduler,
                                   logger, loss_record, args)
@@ -308,7 +308,7 @@ def test(model, val_loader, criterion, epoch, logger, top1_acc, top5_acc, loss_r
         top5_acc.step(outputs, labels)
         loss_record.step(losses)
 
-    test_msg = 'Test Epoch {}, World {}, GPU {}: {}:{:.5}, {}:{:.5}, {}:{:.5}\n'.format(
+    test_msg = 'Test Epoch {}, Node {}, GPU {}: {}:{:.5}, {}:{:.5}, {}:{:.5}'.format(
         epoch, args.world, args.gpu, top1_acc.name, top1_acc.get(), top5_acc.name,
         top5_acc.get(), loss_record.name, loss_record.get())
     logger.info(test_msg)
@@ -338,7 +338,7 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_schedul
         loss_record.step(loss)
 
         if i % args.log_interval == 0 and i != 0:
-            logger.info('Epoch {}, World {}, GPU {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s. lr: {:.5}.'.format(
+            logger.info('Epoch {}, Node {}, GPU {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s. lr: {:.5}.'.format(
                 epoch, args.world, args.gpu, i, top1_acc.name, top1_acc.get(),
                 loss_record.name, loss_record.get(),
                 int((i * args.batch_size) // (time.time() - tic)),
@@ -372,7 +372,7 @@ def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_s
         lr_scheduler.step()
 
         if i % args.log_interval == 0 and i != 0:
-            logger.info('Epoch {}, World {}, GPU {}, Iter {}, {}:{:.5}, {} samples/s.'.format(
+            logger.info('Epoch {}, Node {}, GPU {}, Iter {}, {}:{:.5}, {} samples/s.'.format(
                 epoch, args.world, args.gpu, i, loss_record.name, loss_record.get(),
                 int((i * args.batch_size) // (time.time() - tic))
             ))

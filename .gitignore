@@ -6,4 +6,6 @@ models/__pycache__/
 module/__pycache__/
 params/
 test.py
-train_imagenet.log
+*.log
+*.lock
+
