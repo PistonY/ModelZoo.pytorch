@@ -44,7 +44,7 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 ## ToDo
 - [x] Resume training
 - ~~Try Nvidia-DALI~~
-- [ ] Multi-node(distributed) training by Apex or BytePS
+- [x] Multi-node(distributed) training by Apex or BytePS
 - [ ] I may try AutoAugment.This project aims to train models by ourselves to observe and learn,
      it's impossible for me to train this, just copy feels meaningless.
 
@@ -65,6 +65,7 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
 - ^This is average memory cost.
 - Resnet50 top5 in log file is not right(actually is top -5), just ignore it.
+- I finally train mobilenetv3 to SOTA....cost about 3 months.
 
 ## Optimized Models(with tricks)
 - In progress.
