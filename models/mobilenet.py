@@ -257,7 +257,7 @@ class MobileNetV3_Small(nn.Module):
             nn.BatchNorm2d(576),
             HardSwish(inplace=True),
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(576, 1280, 1),
+            nn.Conv2d(576, 1280, 1, bias=False),
             HardSwish(),
             nn.Dropout2d(p=dropout_rate, inplace=True),
             nn.Flatten(),

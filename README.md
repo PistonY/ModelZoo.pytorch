@@ -58,7 +58,7 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 |resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
 |mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
 |mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
-|mobilenetv3|150|FP16  |256        |  8   |0.4  | -      |   8800          |-/-|
+|mobilenetv3|150|FP16  |256        |  8   |0.4  |Label smoothing No decay bias|   8800          |75.48/92.5 |
 
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.

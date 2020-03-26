@@ -35,8 +35,6 @@ parser.add_argument('--batch-size', type=int, default=32,
                     help='training batch size per device (CPU/GPU).')
 parser.add_argument('--dtype', type=str, default='float32',
                     help='data type for training. default is float32')
-# parser.add_argument('--devices', type=str, default='0',
-#                     help='gpus to use.')
 parser.add_argument('-j', '--num-data-workers', dest='num_workers', default=4, type=int,
                     help='number of preprocessing workers')
 parser.add_argument('--epochs', type=int, default=1,
@@ -236,7 +234,8 @@ def main_worker(gpu, ngpus_per_node, args):
                             drop_last=False)
 
     if resume_epoch > 0:
-        checkpoint = torch.load(args.resume_param)
+        loc = 'cuda:{}'.format(args.gpu)
+        checkpoint = torch.load(args.resume_param, map_location=loc)
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         amp.load_state_dict(checkpoint['amp'])
