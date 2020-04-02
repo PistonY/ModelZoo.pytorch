@@ -185,7 +185,8 @@ def main_worker(gpu, ngpus_per_node, args):
         model = get_model(args.model, **model_setting)
 
     if args.rank % ngpus_per_node == 0 and args.model_info:
-        summary(model, torch.rand((1, 3, input_size, input_size)))
+        with torch.no_grad():
+            summary(model, torch.rand((1, 3, input_size, input_size)))
 
     KaimingInitializer(model)
 

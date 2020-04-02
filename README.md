@@ -70,17 +70,6 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 ## Optimized Models(with tricks)
 - In progress.
 
-
-## Citation
-```
-@misc{ModelZoo.pytorch,
-  title = {Basic deep conv neural network reproduce and explore},
-  author = {X.Yang},
-  URL = {https://github.com/PistonY/ModelZoo.pytorch},
-  year = {2019}
-  }
-```
-
 ## Ablation Study on Tricks
 
 Here are lots of tricks to improve accuracy during this years.(If you have another idea please open an issue.)
@@ -121,6 +110,16 @@ You can think of it as a performance in the current situation.
 - ^:Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
 - More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
 - ~:50 layers may not long enough for pre-active.
+
+## Citation
+```
+@misc{ModelZoo.pytorch,
+  title = {Basic deep conv neural network reproduce and explore},
+  author = {X.Yang},
+  URL = {https://github.com/PistonY/ModelZoo.pytorch},
+  year = {2019}
+  }
+```
 
 ## Reference
 - [1] [Deep Residual Learning for Image Recognition](https://arxiv.org/pdf/1512.03385.pdf)
