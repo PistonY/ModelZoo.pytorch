@@ -58,7 +58,7 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 |resnet101v2|120|FP16  |128        |  8   |0.4  | -      |   9900          |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
 |mobilenetv1|150|FP16  |256        |  8   |0.4  | -      |   9800          |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
 |mobilenetv2|150|FP16  |256        |  8   |0.4  | -      |   9800          |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
-|mobilenetv3 Large|360|FP16  |256        |  8   |2.6  |Label smoothing No decay bias Dropout|   8800          |75.64/92.61 |
+|mobilenetv3 Large|360|FP16  |256        |  8   |2.6  |Label smoothing No decay bias Dropout|   8800          |75.64/92.61 |[Google Drive](https://drive.google.com/drive/folders/1pZSDhNuSxSIyKq4Leyam9m5iQr1Xcpf6?usp=sharing)|
 
 
 
@@ -66,7 +66,7 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
 - ^This is average memory cost.
 - Resnet50 top5 in log file is not right(actually is top -5), just ignore it.
-- I finally train mobilenetv3 to SOTA....cost about 3 months.
+
 
 ## Optimized Models(with tricks)
 - In progress.
