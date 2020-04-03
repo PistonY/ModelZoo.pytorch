@@ -134,8 +134,8 @@ def set_model(drop_out, norm_layer, act, args):
     return setting
 
 
-def get_logger(args):
-    filehandler = ConcurrentRotatingFileHandler(args.logging_file)
+def get_logger(file_path):
+    filehandler = ConcurrentRotatingFileHandler(file_path)
     streamhandler = logging.StreamHandler()
 
     logger = logging.getLogger('Distribute training logs.')
@@ -147,7 +147,7 @@ def get_logger(args):
 
 def main():
     args = parser.parse_args()
-    logger = get_logger(args)
+    logger = get_logger(args.logging_file)
     logger.info(args)
     check_dir(args.save_dir)
 
@@ -163,7 +163,7 @@ def main():
 
 def main_worker(gpu, ngpus_per_node, args):
     args.gpu = gpu
-    logger = get_logger(args)
+    logger = get_logger(args.logging_file)
     logger.info("Use GPU: {} for training".format(args.gpu))
 
     args.rank = args.rank * ngpus_per_node + gpu
@@ -212,6 +212,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
 
     if args.apex_ddp:
+        # not recommend, lead to low accuracy.
         model = DDP(model, delay_allreduce=True)
     else:
         model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])

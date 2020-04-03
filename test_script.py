@@ -1,28 +1,22 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
-import argparse, time, logging, os
+import argparse
+import os
 import models
 import torch
-import warnings
-import apex
-from torch.utils.data import DistributedSampler
 
 from torchtoolbox import metric
-from torchtoolbox.transform import Cutout
-from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
-from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
-from torchtoolbox.nn.init import KaimingInitializer
-from torchtoolbox.tools import no_decay_bias, \
-    mixup_data, mixup_criterion, check_dir
+
+from torchtoolbox.nn import SwitchNorm2d, Swish
+
 from torchtoolbox.data import ImageLMDB
 
 from torchvision import transforms
 from torchvision.datasets import ImageNet
 from torch.utils.data import DataLoader
 from torch import nn
-from torch import optim
-from apex import amp
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='Train a model on ImageNet.')
 parser.add_argument('--data-path', type=str, required=True,
@@ -47,7 +41,7 @@ parser.add_argument('--norm-layer', type=str, default='',
                     help='Norm layer to use.')
 parser.add_argument('--activation', type=str, default='',
                     help='activation to use.')
-parser.add_argument('--param', type=str, default='',
+parser.add_argument('--param-path', type=str, default='',
                     help='param used to test.')
 
 args = parser.parse_args()
@@ -85,7 +79,6 @@ device_ids = args.devices.strip().split(',')
 device_ids = [int(device) for device in device_ids]
 
 dtype = args.dtype
-epochs = args.epochs
 num_workers = args.num_workers
 batch_size = args.batch_size * len(device_ids)
 normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -105,7 +98,7 @@ else:
 
 val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
-model_setting = set_model(args.dropout, args.norm_layer, args.activation)
+model_setting = set_model(0, args.norm_layer, args.activation)
 
 try:
     model = get_model(args.model, alpha=args.alpha, **model_setting)
@@ -113,8 +106,9 @@ except TypeError:
     model = get_model(args.model, **model_setting)
 
 model.to(device)
+model = nn.DataParallel(model)
 
-checkpoint = torch.load(args.param)
+checkpoint = torch.load(args.param_path)
 model.load_state_dict(checkpoint['model'])
 print("Finish loading resume param.")
 
@@ -122,8 +116,7 @@ top1_acc = metric.Accuracy(name='Top1 Accuracy')
 top5_acc = metric.TopKAccuracy(top=5, name='Top5 Accuracy')
 loss_record = metric.NumericalCost(name='Loss')
 
-Loss = nn.CrossEntropyLoss() if not args.label_smoothing else \
-    LabelSmoothingLoss(classes, smoothing=0.1)
+Loss = nn.CrossEntropyLoss()
 
 
 @torch.no_grad()
@@ -132,7 +125,7 @@ def test():
     top5_acc.reset()
     loss_record.reset()
     model.eval()
-    for data, labels in val_data:
+    for data, labels in tqdm(val_data):
         data = data.to(device, non_blocking=True)
         labels = labels.to(device, non_blocking=True)
 
