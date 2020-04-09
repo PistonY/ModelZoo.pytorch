@@ -7,7 +7,6 @@ import torch
 import warnings
 import apex
 
-from collections import namedtuple
 from cloghandler import ConcurrentRotatingFileHandler
 
 from torchtoolbox import metric
@@ -116,23 +115,18 @@ def get_model(name, **kwargs):
     return models.__dict__[name](**kwargs)
 
 
-def set_model(drop_out, norm_layer, act, args):
+def set_model(drop_out, norm_layer, act):
     setting = {}
     if drop_out != 0:
-        setting['dropout_rate'] = args.dropout
+        setting['dropout_rate'] = drop_out
     if norm_layer != '':
-        if args.norm_layer == 'switch':
+        if norm_layer == 'switch':
             setting['norm_layer'] = SwitchNorm2d
         else:
             raise NotImplementedError
     if act != '':
-        Act = namedtuple('Act', ['act_type', 'kwargs'])
-        if args.activation == 'swish':
-            setting['activation'] = Act('swish', {})
-        elif args.activation == 'relu6':
-            setting['activation'] = Act('relu6', {'inplace': True})
-    else:
-        raise NotImplementedError
+        setting['activation'] = act
+
     return setting
 
 
