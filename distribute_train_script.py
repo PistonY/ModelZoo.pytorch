@@ -7,6 +7,7 @@ import torch
 import warnings
 import apex
 
+from collections import namedtuple
 from cloghandler import ConcurrentRotatingFileHandler
 
 from torchtoolbox import metric
@@ -125,12 +126,13 @@ def set_model(drop_out, norm_layer, act, args):
         else:
             raise NotImplementedError
     if act != '':
+        Act = namedtuple('Act', ['act_type', 'kwargs'])
         if args.activation == 'swish':
-            setting['activation'] = Swish()
+            setting['activation'] = Act('swish', {})
         elif args.activation == 'relu6':
-            setting['activation'] = nn.ReLU6(inplace=True)
-        else:
-            raise NotImplementedError
+            setting['activation'] = Act('relu6', {'inplace': True})
+    else:
+        raise NotImplementedError
     return setting
 
 
@@ -306,9 +308,9 @@ def test(model, val_loader, criterion, epoch, logger, top1_acc, top5_acc, loss_r
         outputs = model(data)
         losses = criterion(outputs, labels)
 
-        top1_acc.step(outputs, labels)
-        top5_acc.step(outputs, labels)
-        loss_record.step(losses)
+        top1_acc.update(outputs, labels)
+        top5_acc.update(outputs, labels)
+        loss_record.update(losses)
 
     test_msg = 'Test Epoch {}, Node {}, GPU {}: {}:{:.5}, {}:{:.5}, {}:{:.5}'.format(
         epoch, args.world, args.gpu, top1_acc.name, top1_acc.get(), top5_acc.name,
@@ -336,8 +338,8 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_schedul
         optimizer.step()
 
         lr_scheduler.step()
-        top1_acc.step(outputs, labels)
-        loss_record.step(loss)
+        top1_acc.update(outputs, labels)
+        loss_record.update(loss)
 
         if i % args.log_interval == 0 and i != 0:
             logger.info('Epoch {}, Node {}, GPU {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s. lr: {:.5}.'.format(
@@ -370,7 +372,7 @@ def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_s
             scaled_loss.backward()
         optimizer.step()
 
-        loss_record.step(loss)
+        loss_record.update(loss)
         lr_scheduler.step()
 
         if i % args.log_interval == 0 and i != 0:

@@ -24,8 +24,6 @@ from torch import nn
 from torch import optim
 from apex import amp
 
-
-
 parser = argparse.ArgumentParser(description='Train a model on ImageNet.')
 parser.add_argument('--data-path', type=str, required=True,
                     help='training and validation dataset.')
@@ -239,9 +237,9 @@ def test(epoch=0, save_status=True):
         outputs = model(data)
         losses = Loss(outputs, labels)
 
-        top1_acc.step(outputs, labels)
-        top5_acc.step(outputs, labels)
-        loss_record.step(losses)
+        top1_acc.update(outputs, labels)
+        top5_acc.update(outputs, labels)
+        loss_record.update(losses)
 
     test_msg = 'Test Epoch {}: {}:{:.5}, {}:{:.5}, {}:{:.5}\n'.format(
         epoch, top1_acc.name, top1_acc.get(), top5_acc.name, top5_acc.get(),
@@ -279,8 +277,8 @@ def train():
             optimizer.step()
 
             lr_scheduler.step()
-            top1_acc.step(outputs, labels)
-            loss_record.step(loss)
+            top1_acc.update(outputs, labels)
+            loss_record.update(loss)
 
             if i % args.log_interval == 0 and i != 0:
                 logger.info('Epoch {}, Iter {}, {}:{:.5}, {}:{:.5}, {} samples/s. lr: {:.5}.'.format(
@@ -319,7 +317,7 @@ def train_mixup():
                 scaled_loss.backward()
             optimizer.step()
 
-            loss_record.step(loss)
+            loss_record.update(loss)
             lr_scheduler.step()
 
             if i % args.log_interval == 0 and i != 0:

@@ -3,6 +3,8 @@
 
 
 import torch.nn as nn
+from collections import namedtuple
+from torchtoolbox.nn.activation import Activation
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152', 'resnext50_32x4d', 'resnext101_32x8d',
@@ -29,14 +31,12 @@ class BasicBlock(nn.Module):
         super(BasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        if activation is None:
-            activation = nn.ReLU(inplace=True)
         if groups != 1 or base_width != 64:
             raise ValueError('BasicBlock only supports groups=1 and base_width=64')
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = norm_layer(planes)
-        self.act = activation
+        self.act = Activation(activation, auto_optimize=True)
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = norm_layer(planes)
         self.downsample = nn.Identity() if downsample is None else downsample
@@ -66,8 +66,6 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        if activation is None:
-            activation = nn.ReLU(inplace=True)
         width = int(planes * (base_width / 64.)) * groups
 
         self.conv1 = conv1x1(inplanes, width)
@@ -76,7 +74,7 @@ class Bottleneck(nn.Module):
         self.bn2 = norm_layer(width)
         self.conv3 = conv1x1(width, planes * self.expansion)
         self.bn3 = norm_layer(planes * self.expansion)
-        self.act = activation
+        self.act = Activation(activation, auto_optimize=True)
         self.downsample = nn.Identity() if downsample is None else downsample
 
     def forward(self, x):
@@ -107,8 +105,6 @@ class BasicBlockV2(nn.Module):
         super(BasicBlockV2, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        if activation is None:
-            activation = nn.ReLU(inplace=True)
         if groups != 1 or base_width != 64:
             raise ValueError('BasicBlock only supports groups=1 and base_width=64')
 
@@ -117,7 +113,7 @@ class BasicBlockV2(nn.Module):
         self.bn2 = norm_layer(planes)
         self.conv2 = conv3x3(planes, planes)
         self.downsample = downsample
-        self.act = activation
+        self.act = Activation(activation, auto_optimize=True)
 
     def forward(self, x):
         identity = x
@@ -144,8 +140,6 @@ class BottleneckV2(nn.Module):
         super(BottleneckV2, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        if activation is None:
-            activation = nn.ReLU(inplace=True)
         width = int(planes * (base_width / 64.)) * groups
 
         self.bn1 = norm_layer(inplanes)
@@ -154,7 +148,7 @@ class BottleneckV2(nn.Module):
         self.conv2 = conv3x3(width, width, stride, groups)
         self.bn3 = norm_layer(width)
         self.conv3 = conv1x1(width, planes * self.expansion)
-        self.act = activation
+        self.act = Activation(activation, auto_optimize=True)
 
         self.downsample = downsample
 
@@ -179,15 +173,13 @@ class BottleneckV2(nn.Module):
 
 
 class ResNet(nn.Module):
-
     def __init__(self, block, layers, num_classes=1000, groups=1, width_per_group=64,
-                 norm_layer=None, activation=None, dropout_rate=None, small_input=False):
+                 norm_layer=None, activation='relu', dropout_rate=None, small_input=False):
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        if activation is None:
-            activation = nn.ReLU(inplace=True)
         self._norm_layer = norm_layer
+        self._activation = activation
 
         self.inplanes = 64
 
@@ -200,7 +192,7 @@ class ResNet(nn.Module):
             self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
                                    bias=False)
         self.bn1 = norm_layer(self.inplanes)
-        self.act = activation
+        self.act = Activation(activation, auto_optimize=True)
         if small_input:
             self.maxpool = nn.Identity()
         else:
@@ -216,7 +208,6 @@ class ResNet(nn.Module):
 
     def _make_layer(self, block, planes, blocks, stride=1):
         norm_layer = self._norm_layer
-        act = self.act
         downsample = None
 
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -227,12 +218,12 @@ class ResNet(nn.Module):
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, norm_layer, act))
+                            self.base_width, norm_layer, self._activation))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups=self.groups,
                                 base_width=self.base_width, norm_layer=norm_layer,
-                                activation=act))
+                                activation=self._activation))
 
         return nn.Sequential(*layers)
 
@@ -257,13 +248,14 @@ class ResNet(nn.Module):
 
 class ResNetV2(nn.Module):
     def __init__(self, block, layers, num_classes=1000, groups=1, width_per_group=64,
-                 norm_layer=None, activation=None, dropout_rate=None, small_input=False):
+                 norm_layer=None, activation='relu', dropout_rate=None, small_input=False):
         super(ResNetV2, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        if activation is None:
-            activation = nn.ReLU(inplace=True)
+
         self._norm_layer = norm_layer
+        self._activation = activation
+
         self.inplanes = 64
 
         self.groups = groups
@@ -275,7 +267,8 @@ class ResNetV2(nn.Module):
             self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
                                    bias=False)
         self.bn1 = norm_layer(self.inplanes)
-        self.act = activation
+        self.act = Activation(activation, auto_optimize=True)
+
         if small_input:
             self.maxpool = nn.Identity()
         else:
@@ -292,7 +285,6 @@ class ResNetV2(nn.Module):
 
     def _make_layer(self, block, planes, blocks, stride=1):
         norm_layer = self._norm_layer
-        act = self.act
         downsample = None
 
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -302,12 +294,12 @@ class ResNetV2(nn.Module):
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, norm_layer, act))
+                            self.base_width, norm_layer, self._activation))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups=self.groups,
                                 base_width=self.base_width, norm_layer=norm_layer,
-                                activation=act))
+                                activation=self._activation))
 
         return nn.Sequential(*layers)
 
