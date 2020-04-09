@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
-import argparse, time, logging, os
+import argparse, time, os
 import models
 import torch
 import warnings
 import apex
 
-from cloghandler import ConcurrentRotatingFileHandler
-
+from utils import get_logger, get_model, set_model
 from torchtoolbox import metric
 from torchtoolbox.transform import Cutout
-from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d
+from torchtoolbox.nn import LabelSmoothingLoss
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
@@ -111,36 +110,6 @@ assert torch.cuda.is_available(), \
     "Please don't waste of your time,it's impossible to train on CPU."
 
 
-def get_model(name, **kwargs):
-    return models.__dict__[name](**kwargs)
-
-
-def set_model(drop_out, norm_layer, act):
-    setting = {}
-    if drop_out != 0:
-        setting['dropout_rate'] = drop_out
-    if norm_layer != '':
-        if norm_layer == 'switch':
-            setting['norm_layer'] = SwitchNorm2d
-        else:
-            raise NotImplementedError
-    if act != '':
-        setting['activation'] = act
-
-    return setting
-
-
-def get_logger(file_path):
-    filehandler = ConcurrentRotatingFileHandler(file_path)
-    streamhandler = logging.StreamHandler()
-
-    logger = logging.getLogger('Distribute training logs.')
-    logger.setLevel(logging.INFO)
-    logger.addHandler(filehandler)
-    logger.addHandler(streamhandler)
-    return logger
-
-
 def main():
     args = parser.parse_args()
     logger = get_logger(args.logging_file)
@@ -177,9 +146,9 @@ def main_worker(gpu, ngpus_per_node, args):
     model_setting = set_model(args.dropout, args.norm_layer, args.activation)
 
     try:
-        model = get_model(args.model, alpha=args.alpha, **model_setting)
+        model = get_model(models, args.model, alpha=args.alpha, **model_setting)
     except TypeError:
-        model = get_model(args.model, **model_setting)
+        model = get_model(models, args.model, **model_setting)
 
     model.apply(initializer)
     if args.rank % ngpus_per_node == 0 and args.model_info:

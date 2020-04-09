@@ -7,10 +7,11 @@ import torch
 import warnings
 import apex
 from torch.utils.data import DistributedSampler
+from utils import get_model, set_model
 
 from torchtoolbox import metric
 from torchtoolbox.transform import Cutout
-from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
+from torchtoolbox.nn import LabelSmoothingLoss
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
@@ -103,30 +104,6 @@ warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
 
 torch.backends.cudnn.benchmark = True
 
-
-def get_model(name, **kwargs):
-    return models.__dict__[name](**kwargs)
-
-
-def set_model(drop_out, norm_layer, act):
-    setting = {}
-    if drop_out != 0:
-        setting['dropout_rate'] = args.dropout
-    if norm_layer != '':
-        if args.norm_layer == 'switch':
-            setting['norm_layer'] = SwitchNorm2d
-        else:
-            raise NotImplementedError
-    if act != '':
-        if args.activation == 'swish':
-            setting['activation'] = Swish()
-        elif args.activation == 'relu6':
-            setting['activation'] = nn.ReLU6(inplace=True)
-        else:
-            raise NotImplementedError
-    return setting
-
-
 classes = 1000
 num_training_samples = 1281167
 
@@ -142,6 +119,7 @@ dtype = args.dtype
 epochs = args.epochs
 resume_epoch = args.resume_epoch
 num_workers = args.num_workers
+initializer = KaimingInitializer()
 batch_size = args.batch_size * len(device_ids)
 batches_pre_epoch = num_training_samples // batch_size
 lr = 0.1 * (args.batch_size // 32) if args.lr == 0 else args.lr
@@ -182,11 +160,11 @@ val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=n
 model_setting = set_model(args.dropout, args.norm_layer, args.activation)
 
 try:
-    model = get_model(args.model, alpha=args.alpha, **model_setting)
+    model = get_model(models, args.model, alpha=args.alpha, **model_setting)
 except TypeError:
-    model = get_model(args.model, **model_setting)
+    model = get_model(models, args.model, **model_setting)
 
-KaimingInitializer(model)
+model.apply(initializer)
 model.to(device)
 parameters = model.parameters() if not args.no_wd else no_decay_bias(model)
 optimizer = optim.SGD(parameters, lr=lr, momentum=args.momentum,

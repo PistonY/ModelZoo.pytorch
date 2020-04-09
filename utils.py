@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
+from cloghandler import ConcurrentRotatingFileHandler
+from torchtoolbox.nn import SwitchNorm2d
+from torch import nn
+import logging
 
 # init DALI
 try:
@@ -8,6 +12,36 @@ try:
     from nvidia.dali.plugin.pytorch import DALIClassificationIterator
 except ImportError:
     print('DALI is not available')
+
+
+def get_model(models, name, **kwargs) -> nn.Module:
+    return models.__dict__[name](**kwargs)
+
+
+def set_model(drop_out, norm_layer, act):
+    setting = {}
+    if drop_out != 0:
+        setting['dropout_rate'] = drop_out
+    if norm_layer != '':
+        if norm_layer == 'switch':
+            setting['norm_layer'] = SwitchNorm2d
+        else:
+            raise NotImplementedError
+    if act != '':
+        setting['activation'] = act
+
+    return setting
+
+
+def get_logger(file_path):
+    filehandler = ConcurrentRotatingFileHandler(file_path)
+    streamhandler = logging.StreamHandler()
+
+    logger = logging.getLogger('Distribute training logs.')
+    logger.setLevel(logging.INFO)
+    logger.addHandler(filehandler)
+    logger.addHandler(streamhandler)
+    return logger
 
 
 class TrainPipe(dali.pipeline.Pipeline):
