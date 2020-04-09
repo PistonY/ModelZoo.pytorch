@@ -11,7 +11,7 @@ from cloghandler import ConcurrentRotatingFileHandler
 
 from torchtoolbox import metric
 from torchtoolbox.transform import Cutout
-from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d, Swish
+from torchtoolbox.nn import LabelSmoothingLoss, SwitchNorm2d
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
@@ -170,21 +170,20 @@ def main_worker(gpu, ngpus_per_node, args):
     epochs = args.epochs
     input_size = args.input_size
     resume_epoch = args.resume_epoch
+    initializer = KaimingInitializer()
     batches_pre_epoch = args.num_training_samples // (args.batch_size * ngpus_per_node)
     lr = 0.1 * (args.batch_size * ngpus_per_node // 32) if args.lr == 0 else args.lr
 
-    model_setting = set_model(args.dropout, args.norm_layer, args.activation, args)
+    model_setting = set_model(args.dropout, args.norm_layer, args.activation)
 
     try:
         model = get_model(args.model, alpha=args.alpha, **model_setting)
     except TypeError:
         model = get_model(args.model, **model_setting)
 
+    model.apply(initializer)
     if args.rank % ngpus_per_node == 0 and args.model_info:
-        with torch.no_grad():
-            summary(model, torch.rand((1, 3, input_size, input_size)))
-
-    KaimingInitializer(model)
+        summary(model, torch.rand((1, 3, input_size, input_size)))
 
     if args.sync_bn:
         logger.info('Use Apex Synced BN.')
