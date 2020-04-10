@@ -2,6 +2,7 @@
 # @Author  : DevinYang(pistonyang@gmail.com)
 __all__ = ['MobileNetV1', 'MobileNetV2', 'MobileNetV3_Large', 'MobileNetV3_Small']
 
+from torchtoolbox.nn import Activation
 from functools import partial
 from torch import nn
 import math
@@ -47,20 +48,20 @@ class SE_Module(nn.Module):
         return x * y
 
 
-class Activation(nn.Module):
-    def __init__(self, act_type, inplace=False):
-        super(Activation, self).__init__()
-        if act_type == 'relu':
-            self.act = nn.ReLU(inplace=inplace)
-        elif act_type == 'relu6':
-            self.act = nn.ReLU6(inplace=inplace)
-        elif act_type == 'h_swish':
-            self.act = HardSwish(inplace=inplace)
-        else:
-            raise NotImplementedError('{} activation is not implemented.'.format(act_type))
-
-    def forward(self, x):
-        return self.act(x)
+# class Activation(nn.Module):
+#     def __init__(self, act_type, inplace=False):
+#         super(Activation, self).__init__()
+#         if act_type == 'relu':
+#             self.act = nn.ReLU(inplace=inplace)
+#         elif act_type == 'relu6':
+#             self.act = nn.ReLU6(inplace=inplace)
+#         elif act_type == 'h_swish':
+#             self.act = HardSwish(inplace=inplace)
+#         else:
+#             raise NotImplementedError('{} activation is not implemented.'.format(act_type))
+#
+#     def forward(self, x):
+#         return self.act(x)
 
 
 class MobileNetBottleneck(nn.Module):
@@ -68,7 +69,7 @@ class MobileNetBottleneck(nn.Module):
                  activation='relu6', first_conv=True, skip=True, linear=True):
         super(MobileNetBottleneck, self).__init__()
 
-        self.act = Activation(activation, inplace=True)
+        self.act = Activation(activation, auto_optimize=True)
         hidden_c = round(in_c * expansion)
         self.linear = linear
         self.skip = stride == 1 and in_c == out_c and skip
@@ -81,7 +82,7 @@ class MobileNetBottleneck(nn.Module):
         seq.append(nn.Conv2d(hidden_c, hidden_c, kernel_size, stride,
                              kernel_size // 2, groups=hidden_c, bias=False))
         seq.append(nn.BatchNorm2d(hidden_c))
-        seq.append(Activation(activation, inplace=True))
+        seq.append(Activation(activation, auto_optimize=True))
         if se:
             seq.append(SE_Module(hidden_c))
         seq.append(nn.Conv2d(hidden_c, out_c, 1, 1, bias=False))

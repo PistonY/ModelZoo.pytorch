@@ -56,16 +56,14 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 |resnet101|120 |FP16   |128        |  8   |0.4  | -      | 44.7/7.8G       |79.13/94.38|[Google Drive](https://drive.google.com/drive/folders/1nmdpX39_9KidxxUXuL0uDYpDGjavQS0M?usp=sharing)|
 |resnet50v2|120|FP16   |128        |  8   |0.4  | -      | 25.6/4.1G       |77.06/93.44|[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
 |resnet101v2|120|FP16  |128        |  8   |0.4  | -      | 44.6/7.8G       |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
-|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      | 4.3 /572.2M     |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
-|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      | 3.5 /305.3M     |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
+|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      | 4.3/572.2M     |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
+|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      | 3.5/305.3M     |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
 |mobilenetv3 Large|360|FP16  |256        |  8   |2.6  |Label smoothing No decay bias Dropout|   5.5/219M         |75.64/92.61 |[Google Drive](https://drive.google.com/drive/folders/1pZSDhNuSxSIyKq4Leyam9m5iQr1Xcpf6?usp=sharing)|
 
 
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
 - *Batch size is pre GPU holds. Total batch size should be (batch size * gpus).
-- ^This is average memory cost.
-- Resnet50 top5 in log file is not right(actually is top -5), just ignore it.
 
 
 ## Optimized Models(with tricks)
