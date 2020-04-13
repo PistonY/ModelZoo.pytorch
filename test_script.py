@@ -132,9 +132,9 @@ def test():
         outputs = model(data)
         losses = Loss(outputs, labels)
 
-        top1_acc.step(outputs, labels)
-        top5_acc.step(outputs, labels)
-        loss_record.step(losses)
+        top1_acc.update(outputs, labels)
+        top5_acc.update(outputs, labels)
+        loss_record.update(losses)
 
     test_msg = 'Test: {}:{:.5}, {}:{:.5}, {}:{:.5}\n'.format(
         top1_acc.name, top1_acc.get(), top5_acc.name, top5_acc.get(),

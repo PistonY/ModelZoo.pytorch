@@ -59,6 +59,7 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 |mobilenetv1|150|FP16  |256        |  8   |0.4  | -      | 4.3/572.2M     |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
 |mobilenetv2|150|FP16  |256        |  8   |0.4  | -      | 3.5/305.3M     |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
 |mobilenetv3 Large|360|FP16  |256        |  8   |2.6  |Label smoothing No decay bias Dropout|   5.5/219M         |75.64/92.61 |[Google Drive](https://drive.google.com/drive/folders/1pZSDhNuSxSIyKq4Leyam9m5iQr1Xcpf6?usp=sharing)|
+|mobilenetv3 Small|360|FP16  |256        |  8   |2.6  |Label smoothing No decay bias Dropout|   3.0/57.8M         |67.83/97.78 ||
 
 
 
