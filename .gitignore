@@ -1,4 +1,4 @@
-distribute_train_script.py
+scripts/distribute_train_script.py
 test/
 .idea/
 __pycache__/

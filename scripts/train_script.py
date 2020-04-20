@@ -7,10 +7,9 @@ import torch
 import warnings
 import apex
 from torch.utils.data import DistributedSampler
-from utils import get_model, set_model
+from scripts.utils import get_model, set_model
 
 from torchtoolbox import metric
-from torchtoolbox.transform import Cutout
 from torchtoolbox.nn import LabelSmoothingLoss
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
