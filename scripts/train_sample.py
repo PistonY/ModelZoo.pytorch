@@ -6,7 +6,6 @@ import models
 import torch
 import warnings
 import apex
-from torch.utils.data import DistributedSampler
 from scripts.utils import get_model, set_model
 
 from torchtoolbox import metric
@@ -14,7 +13,7 @@ from torchtoolbox.nn import LabelSmoothingLoss
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
-    mixup_data, mixup_criterion, check_dir
+    mixup_data, mixup_criterion, check_dir, summary
 
 from torchvision import transforms
 from torchvision.datasets import CIFAR10, CIFAR100, MNIST, FashionMNIST, ImageFolder
@@ -22,6 +21,8 @@ from torch.utils.data import DataLoader
 from torch import nn
 from torch import optim
 from apex import amp
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 parser = argparse.ArgumentParser(description='Train a model on ImageNet.')
 parser.add_argument('--data-path', type=str, required=True,
@@ -124,6 +125,14 @@ warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
 
 torch.backends.cudnn.benchmark = True
 
+train_transform = transforms.Compose([
+    transforms.RandomCrop(args.input_size, padding=args.padding),
+    # Cutout(),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+])
+
+val_transform = transforms.ToTensor()
 train_set, val_set = get_dataset(args.dataset)
 
 classes = len(train_set.classes)
@@ -146,28 +155,17 @@ batch_size = args.batch_size * len(device_ids)
 batches_pre_epoch = num_training_samples // batch_size
 lr = 0.1 * (args.batch_size // 32) if args.lr == 0 else args.lr
 
-train_transform = transforms.Compose([
-    transforms.RandomCrop(args.input_size, padding=args.padding),
-    # Cutout(),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-
-])
-
-val_transform = transforms.ToTensor()
-
-torch.distributed.init_process_group(backend="nccl")
-
 train_data = DataLoader(train_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=True)
 val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=num_workers, drop_last=False)
 
 model_setting = set_model(args.dropout, args.norm_layer, args.activation)
 
 try:
-    model = get_model(models, args.model, alpha=args.alpha, **model_setting)
+    model = get_model(models, args.model, alpha=args.alpha, small_input=True, **model_setting)
 except TypeError:
-    model = get_model(models, args.model, **model_setting)
+    model = get_model(models, args.model, small_input=True, **model_setting)
 
+summary(model, torch.rand((1, 3, args.input_size, args.input_size)))
 model.apply(initializer)
 model.to(device)
 parameters = model.parameters() if not args.no_wd else no_decay_bias(model)

@@ -4,9 +4,6 @@ This is a model zoo project under Pytorch. In this repo I will implement some of
 models which have good performance on ImageNet. Then I will train them in most fair way as possible and
 try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 
-Actually it's a little early to open this in public.But I've stuck in MobileNetV3 for a while.
-I'll upload all pre-trained models and logs later.
-
 
 ## Usage
 ### Environment
