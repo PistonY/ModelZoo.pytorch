@@ -32,8 +32,6 @@ def evo_norm(x, prefix, running_var, v, weight, bias,
         else:
             var = running_var
         if v is not None:
-            # print(var.shape, x.shape, v.shape)
-            # _ = v * x
             den = torch.max((var + eps).sqrt(), v * x + instance_std(x, eps))
             x = x / den * weight + bias
         else:
