@@ -204,7 +204,7 @@ Loss = nn.CrossEntropyLoss() if not args.label_smoothing else \
 
 
 @torch.no_grad()
-def test(epoch=0, save_status=True):
+def test(epoch=0, save_status=False):
     top1_acc.reset()
     top5_acc.reset()
     loss_record.reset()

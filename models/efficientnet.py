@@ -93,7 +93,6 @@ class EfficientNet(nn.Module):
             if not width_coeff:
                 return x
 
-            # new_x = x * width_coeff
             new_x = max(min_depth, int(x + depth_div / 2) // depth_div * depth_div)
             if new_x < 0.9 * new_x:
                 new_x += depth_div

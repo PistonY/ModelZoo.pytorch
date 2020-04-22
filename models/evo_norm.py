@@ -100,6 +100,18 @@ class EvoNormS0(_EvoNorm):
                                         affine=affine)
 
 
+class BN_RELU(nn.Module):
+    def __init__(self, num_features):
+        super(BN_RELU, self).__init__()
+        self.block = nn.Sequential(
+            nn.BatchNorm2d(num_features),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x):
+        return self.block(x)
+
+
 def conv3x3(in_planes, out_planes, stride=1, groups=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
@@ -115,14 +127,14 @@ class Bottleneck(nn.Module):
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64):
+                 base_width=64, evo_norm=True):
         super(Bottleneck, self).__init__()
         width = int(planes * (base_width / 64.)) * groups
-        self.evonorm1 = EvoNormB0(inplanes)
+        self.evonorm1 = EvoNormB0(inplanes) if evo_norm else BN_RELU(inplanes)
         self.conv1 = conv1x1(inplanes, width)
-        self.evonorm2 = EvoNormB0(width)
+        self.evonorm2 = EvoNormB0(width) if evo_norm else BN_RELU(width)
         self.conv2 = conv3x3(width, width, stride, groups)
-        self.evonorm3 = EvoNormB0(width)
+        self.evonorm3 = EvoNormB0(width) if evo_norm else BN_RELU(width)
         self.conv3 = conv1x1(width, planes * self.expansion)
         self.downsample = downsample
 
@@ -142,10 +154,10 @@ class Bottleneck(nn.Module):
 
 class EvoResNet(nn.Module):
     def __init__(self, layers, num_classes=1000, groups=1, width_per_group=64,
-                 dropout_rate=None, small_input=False):
+                 dropout_rate=None, small_input=False, evo_norm=True):
         super(EvoResNet, self).__init__()
         self.inplanes = 64
-
+        self.evo_norm = evo_norm
         self.groups = groups
         self.base_width = width_per_group
         if small_input:
@@ -154,7 +166,7 @@ class EvoResNet(nn.Module):
         else:
             self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3,
                                    bias=False)
-        self.evonorm1 = EvoNormB0(self.inplanes)
+        self.evonorm1 = EvoNormB0(self.inplanes) if evo_norm else BN_RELU(self.inplanes)
         if small_input:
             self.maxpool = nn.Identity()
         else:
@@ -164,7 +176,7 @@ class EvoResNet(nn.Module):
         self.layer3 = self._make_layer(256, layers[2], stride=2)
         self.layer4 = self._make_layer(512, layers[3], stride=2)
 
-        self.evonorm2 = EvoNormB0(512 * Bottleneck.expansion)
+        self.evonorm2 = EvoNormB0(512 * Bottleneck.expansion) if evo_norm else BN_RELU(512 * Bottleneck.expansion)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(dropout_rate, inplace=True) if dropout_rate is not None else nn.Identity()
@@ -180,11 +192,11 @@ class EvoResNet(nn.Module):
 
         layers = []
         layers.append(Bottleneck(self.inplanes, planes, stride, downsample, self.groups,
-                                 self.base_width))
+                                 self.base_width, self.evo_norm))
         self.inplanes = planes * Bottleneck.expansion
         for _ in range(1, blocks):
             layers.append(Bottleneck(self.inplanes, planes, groups=self.groups,
-                                     base_width=self.base_width))
+                                     base_width=self.base_width, evo_norm=self.evo_norm))
 
         return nn.Sequential(*layers)
 
