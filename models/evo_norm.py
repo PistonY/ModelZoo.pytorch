@@ -7,95 +7,98 @@ from torch import nn
 __all__ = ['EvoResNet', 'evo_resnet18', 'evo_resnet34', 'evo_resnet50', 'evo_resnet101',
            'evo_resnet152', 'evo_resnext101_32x8d', 'evo_resnext50_32x4d']
 
-
-def instance_std(x, eps=1e-5):
-    var = torch.var(x, dim=(2, 3), keepdim=True)
-    std = torch.sqrt(var + eps)
-    return std
-
-
-def group_std(x: torch.Tensor, groups=32, eps=1e-5):
-    n, c, h, w = x.size()
-    x = torch.reshape(x, (n, groups, c // groups, h, w))
-    var = torch.var(x, dim=(2, 3, 4), keepdim=True)
-    std = torch.sqrt(var + eps)
-    return torch.reshape(std, (n, c, h, w))
+try:
+    # Not in stable release.
+    from torchtoolbox.nn import EvoNormB0, EvoNormS0
+except ImportError:
+    def instance_std(x, eps=1e-5):
+        var = torch.var(x, dim=(2, 3), keepdim=True)
+        std = torch.sqrt(var + eps)
+        return std
 
 
-def evo_norm(x, prefix, running_var, v, weight, bias,
-             training, momentum, eps=0.1, groups=32):
-    if prefix == 'b0':
-        if training:
-            var = torch.var(x, dim=(0, 2, 3), keepdim=True)
-            running_var.mul_(momentum)
-            running_var.add_((1 - momentum) * var)
+    def group_std(x: torch.Tensor, groups=32, eps=1e-5):
+        n, c, h, w = x.size()
+        x = torch.reshape(x, (n, groups, c // groups, h, w))
+        var = torch.var(x, dim=(2, 3, 4), keepdim=True)
+        std = torch.sqrt(var + eps)
+        return torch.reshape(std, (n, c, h, w))
+
+
+    def evo_norm(x, prefix, running_var, v, weight, bias,
+                 training, momentum, eps=0.1, groups=32):
+        if prefix == 'b0':
+            if training:
+                var = torch.var(x, dim=(0, 2, 3), keepdim=True)
+                running_var.mul_(momentum)
+                running_var.add_((1 - momentum) * var)
+            else:
+                var = running_var
+            if v is not None:
+                den = torch.max((var + eps).sqrt(), v * x + instance_std(x, eps))
+                x = x / den * weight + bias
+            else:
+                x = x * weight + bias
+        elif prefix == 's0':
+            if v is not None:
+                x = x * torch.sigmoid(v * x) / group_std(x, groups, eps) * weight + bias
+            else:
+                x = x * weight + bias
         else:
-            var = running_var
-        if v is not None:
-            den = torch.max((var + eps).sqrt(), v * x + instance_std(x, eps))
-            x = x / den * weight + bias
-        else:
-            x = x * weight + bias
-    elif prefix == 's0':
-        if v is not None:
-            x = x * torch.sigmoid(v * x) / group_std(x, groups, eps) * weight + bias
-        else:
-            x = x * weight + bias
-    else:
-        raise NotImplementedError
-    return x
+            raise NotImplementedError
+        return x
 
 
-class _EvoNorm(nn.Module):
-    def __init__(self, prefix, num_features, eps=1e-5, momentum=0.9, groups=32,
-                 affine=True):
-        super(_EvoNorm, self).__init__()
-        assert prefix in ('s0', 'b0')
-        self.prefix = prefix
-        self.groups = groups
-        self.num_features = num_features
-        self.eps = eps
-        self.momentum = momentum
-        self.affine = affine
-        if self.affine:
-            self.weight = nn.Parameter(torch.Tensor(1, num_features, 1, 1))
-            self.bias = nn.Parameter(torch.Tensor(1, num_features, 1, 1))
-            self.v = nn.Parameter(torch.Tensor(1, num_features, 1, 1))
-        else:
-            self.register_parameter('weight', None)
-            self.register_parameter('bias', None)
-            self.register_parameter('v', None)
-        self.register_buffer('running_var', torch.ones(1, num_features, 1, 1))
-        self.reset_parameters()
+    class _EvoNorm(nn.Module):
+        def __init__(self, prefix, num_features, eps=1e-5, momentum=0.9, groups=32,
+                     affine=True):
+            super(_EvoNorm, self).__init__()
+            assert prefix in ('s0', 'b0')
+            self.prefix = prefix
+            self.groups = groups
+            self.num_features = num_features
+            self.eps = eps
+            self.momentum = momentum
+            self.affine = affine
+            if self.affine:
+                self.weight = nn.Parameter(torch.Tensor(1, num_features, 1, 1))
+                self.bias = nn.Parameter(torch.Tensor(1, num_features, 1, 1))
+                self.v = nn.Parameter(torch.Tensor(1, num_features, 1, 1))
+            else:
+                self.register_parameter('weight', None)
+                self.register_parameter('bias', None)
+                self.register_parameter('v', None)
+            self.register_buffer('running_var', torch.ones(1, num_features, 1, 1))
+            self.reset_parameters()
 
-    def reset_parameters(self):
-        if self.affine:
-            torch.nn.init.ones_(self.weight)
-            torch.nn.init.zeros_(self.bias)
-            torch.nn.init.ones_(self.v)
+        def reset_parameters(self):
+            if self.affine:
+                torch.nn.init.ones_(self.weight)
+                torch.nn.init.zeros_(self.bias)
+                torch.nn.init.ones_(self.v)
 
-    def _check_input_dim(self, x):
-        if x.dim() != 4:
-            raise ValueError('expected 4D input (got {}D input)'
-                             .format(x.dim()))
+        def _check_input_dim(self, x):
+            if x.dim() != 4:
+                raise ValueError('expected 4D input (got {}D input)'
+                                 .format(x.dim()))
 
-    def forward(self, x):
-        self._check_input_dim(x)
-        return evo_norm(x, self.prefix, self.running_var, self.v,
-                        self.weight, self.bias, self.training,
-                        self.momentum, self.eps, self.groups)
-
-
-class EvoNormB0(_EvoNorm):
-    def __init__(self, num_features, eps=1e-5, momentum=0.9, affine=True):
-        super(EvoNormB0, self).__init__('b0', num_features, eps, momentum,
-                                        affine=affine)
+        def forward(self, x):
+            self._check_input_dim(x)
+            return evo_norm(x, self.prefix, self.running_var, self.v,
+                            self.weight, self.bias, self.training,
+                            self.momentum, self.eps, self.groups)
 
 
-class EvoNormS0(_EvoNorm):
-    def __init__(self, num_features, groups=32, affine=True):
-        super(EvoNormS0, self).__init__('s0', num_features, groups=groups,
-                                        affine=affine)
+    class EvoNormB0(_EvoNorm):
+        def __init__(self, num_features, eps=1e-5, momentum=0.9, affine=True):
+            super(EvoNormB0, self).__init__('b0', num_features, eps, momentum,
+                                            affine=affine)
+
+
+    class EvoNormS0(_EvoNorm):
+        def __init__(self, num_features, groups=32, affine=True):
+            super(EvoNormS0, self).__init__('s0', num_features, groups=groups,
+                                            affine=affine)
 
 
 class BN_RELU(nn.Module):
