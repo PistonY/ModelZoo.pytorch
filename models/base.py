@@ -3,14 +3,15 @@
 __all__ = ['SELayer']
 
 from torch import nn
+from torchtoolbox.nn import Activation
 
 
 class SELayer(nn.Module):
-    def __init__(self, in_c, reducation_c, act=nn.ReLU(True)):
+    def __init__(self, in_c, reducation_c, act='relu'):
         super(SELayer, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.lin1 = nn.Linear(in_c, reducation_c)
-        self.act = act
+        self.act = Activation(act, auto_optimize=True)
         self.lin2 = nn.Linear(reducation_c, in_c)
 
     def forward(self, x):

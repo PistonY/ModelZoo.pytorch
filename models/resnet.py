@@ -3,6 +3,7 @@
 
 
 import torch.nn as nn
+from torch.nn import functional as F
 from torchtoolbox.nn import Activation
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',

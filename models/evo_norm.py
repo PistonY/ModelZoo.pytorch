@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
-import torch
-from torch import nn
-
 __all__ = ['EvoResNet', 'evo_resnet18', 'evo_resnet34', 'evo_resnet50', 'evo_resnet101',
            'evo_resnet152', 'evo_resnext101_32x8d', 'evo_resnext50_32x4d']
+
+import torch
+from torch import nn
 
 try:
     # Not in stable release.

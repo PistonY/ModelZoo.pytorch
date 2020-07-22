@@ -8,6 +8,8 @@ from .mobilenet import *
 from .proxyless_nas import *
 from .efficientnet import *
 from .evo_norm import *
+from .resnest import *
+from .regnet import *
 from torchvision.models.alexnet import *
 from torchvision.models.densenet import *
 from torchvision.models.googlenet import *

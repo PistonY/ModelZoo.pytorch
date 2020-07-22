@@ -253,11 +253,3 @@ def RegNetY16GF(**kwargs):
 
 def RegNetY32GF(**kwargs):
     return _regnet('32GF', se=True, **kwargs)
-
-# if __name__ == '__main__':
-#     from torchtoolbox.tools import summary
-#     import torch
-#
-#     model = RegNetX4_0GF()
-#     data = torch.randn(1, 3, 224, 224)
-#     summary(model, data)

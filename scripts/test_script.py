@@ -108,7 +108,7 @@ except TypeError:
 model.to(device)
 model = nn.DataParallel(model)
 
-checkpoint = torch.load(args.param_path)
+checkpoint = torch.load(args.param_path, map_location=device)
 model.load_state_dict(checkpoint['model'])
 print("Finish loading resume param.")
 

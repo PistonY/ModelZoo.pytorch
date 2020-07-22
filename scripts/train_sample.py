@@ -19,6 +19,7 @@ from torchvision import transforms
 from torchvision.datasets import CIFAR10, CIFAR100, MNIST, FashionMNIST, ImageFolder
 from torch.utils.data import DataLoader
 from torch import nn
+from torch.nn import functional as F
 from torch import optim
 from apex import amp
 
@@ -126,7 +127,8 @@ warnings.filterwarnings("ignore", "(Possibly )?corrupt EXIF data", UserWarning)
 torch.backends.cudnn.benchmark = True
 
 train_transform = transforms.Compose([
-    transforms.RandomCrop(args.input_size, padding=args.padding),
+    transforms.Pad(args.padding),
+    transforms.RandomCrop(args.input_size),
     # Cutout(),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
@@ -161,9 +163,11 @@ val_data = DataLoader(val_set, batch_size, False, pin_memory=True, num_workers=n
 model_setting = set_model(args.dropout, args.norm_layer, args.activation)
 
 try:
-    model = get_model(models, args.model, alpha=args.alpha, small_input=True, **model_setting)
+    model = get_model(models, args.model, alpha=args.alpha, small_input=True,
+                      return_feature=True, norm_feature=True, **model_setting)
 except TypeError:
-    model = get_model(models, args.model, small_input=True, **model_setting)
+    model = get_model(models, args.model, small_input=True,
+                      return_feature=True, norm_feature=True, **model_setting)
 
 summary(model, torch.rand((1, 3, args.input_size, args.input_size)))
 model.apply(initializer)
