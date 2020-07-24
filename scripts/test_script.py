@@ -7,10 +7,9 @@ import models
 import torch
 
 from torchtoolbox import metric
-
 from torchtoolbox.nn import SwitchNorm2d, Swish
-
 from torchtoolbox.data import ImageLMDB
+from torchtoolbox.tools import summary
 
 from torchvision import transforms
 from torchvision.datasets import ImageNet
@@ -104,6 +103,8 @@ try:
     model = get_model(args.model, alpha=args.alpha, **model_setting)
 except TypeError:
     model = get_model(args.model, **model_setting)
+
+summary(model, torch.rand((1, 3, 224, 224)))
 
 model.to(device)
 model = nn.DataParallel(model)
