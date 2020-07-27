@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+__all__ = ['resnest50']
+
 import torch
 from torch import nn
 
