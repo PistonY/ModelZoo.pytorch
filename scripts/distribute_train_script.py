@@ -27,6 +27,7 @@ from torch import nn
 from torch import optim
 from apex import amp
 from apex.parallel.distributed import DistributedDataParallel as DDP
+from module.aa import ImageNetPolicy
 
 parser = argparse.ArgumentParser(description='Train a model on ImageNet.')
 parser.add_argument('--data-path', type=str, required=True,
@@ -81,6 +82,10 @@ parser.add_argument('--last-gamma', action='store_true',
                     help='apply zero last bn weight in Bottleneck')
 parser.add_argument('--sgd-gc', action='store_true',
                     help='using sgd Gradient Centralization')
+parser.add_argument('--autoaugment', action='store_true',
+                    help='use autoaugment')
+parser.add_argument('--drop-block', action='store_true',
+                    help='use DropBlock')
 parser.add_argument('--save-dir', type=str, default='params',
                     help='directory of saved models')
 parser.add_argument('--model-info', action='store_true',
@@ -214,14 +219,23 @@ def main_worker(gpu, ngpus_per_node, args):
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
-    train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(input_size),
-        Cutout(),
-        transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(0.4, 0.4, 0.4),
-        transforms.ToTensor(),
-        normalize,
-    ])
+    if args.autoaugment:
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(input_size),
+            transforms.RandomHorizontalFlip(),
+            ImageNetPolicy(),
+            transforms.ToTensor(),
+            normalize,
+        ])
+    else:
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(input_size),
+            # Cutout(),
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(0.4, 0.4, 0.4),
+            transforms.ToTensor(),
+            normalize,
+        ])
 
     val_transform = transforms.Compose([
         transforms.Resize(int(input_size / 0.875)),
