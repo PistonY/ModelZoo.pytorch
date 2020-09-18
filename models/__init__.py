@@ -10,6 +10,7 @@ from .efficientnet import *
 from .evo_norm import *
 from .resnest import *
 from .regnet import *
+from .ghostnet import *
 from torchvision.models.alexnet import *
 from torchvision.models.densenet import *
 from torchvision.models.googlenet import *

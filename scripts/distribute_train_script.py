@@ -5,7 +5,7 @@ import argparse, time, os
 import models
 import torch
 import warnings
-import apex
+# import apex
 
 from scripts.utils import get_logger, get_model, set_model
 from torchtoolbox import metric
@@ -15,7 +15,6 @@ from torchtoolbox.optimizer.sgd_gc import SGD_GC
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
     mixup_data, mixup_criterion, check_dir, summary
-from torchtoolbox.data import ImageLMDB
 from torchtoolbox.transform import Cutout
 
 from torchvision.datasets import ImageNet
@@ -25,15 +24,17 @@ from torch.utils.data import DistributedSampler
 from torchvision import transforms
 from torch import nn
 from torch import optim
-from apex import amp
-from apex.parallel.distributed import DistributedDataParallel as DDP
+from torch.cuda.amp import autocast, GradScaler
+
+# from apex import amp
+# from apex.parallel.distributed import DistributedDataParallel as DDP
 from module.aa import ImageNetPolicy
+
+# from module.dropblock import DropBlockScheduler
 
 parser = argparse.ArgumentParser(description='Train a model on ImageNet.')
 parser.add_argument('--data-path', type=str, required=True,
                     help='training and validation dataset.')
-parser.add_argument('--use-lmdb', action='store_true',
-                    help='use LMDB dataset/format')
 parser.add_argument('--batch-size', type=int, default=32,
                     help='training batch size per device (CPU/GPU).')
 parser.add_argument('--dtype', type=str, default='float32',
@@ -155,12 +156,13 @@ def main_worker(gpu, ngpus_per_node, args):
     torch.distributed.init_process_group(backend="nccl", init_method=args.dist_url,
                                          world_size=args.world_size, rank=args.rank)
 
-    dtype = args.dtype
     epochs = args.epochs
     input_size = args.input_size
     resume_epoch = args.resume_epoch
     initializer = KaimingInitializer()
     zero_gamma = ZeroLastGamma()
+    mix_precision_training = True if args.dtype == 'float16' else False
+    is_first_rank = True if args.rank % ngpus_per_node == 0 else False
 
     batches_pre_epoch = args.num_training_samples // (args.batch_size * ngpus_per_node)
     lr = 0.1 * (args.batch_size * ngpus_per_node // 32) if args.lr == 0 else args.lr
@@ -177,12 +179,8 @@ def main_worker(gpu, ngpus_per_node, args):
         model.apply(zero_gamma)
         logger.info('Apply zero last gamma init.')
 
-    if args.rank % ngpus_per_node == 0 and args.model_info:
+    if is_first_rank and args.model_info:
         summary(model, torch.rand((1, 3, input_size, input_size)))
-
-    if args.sync_bn:
-        model = apex.parallel.convert_syncbn_model(model)
-        logger.info('Use Apex Synced BN.')
 
     parameters = model.parameters() if not args.no_wd else no_decay_bias(model)
     if args.sgd_gc:
@@ -195,6 +193,9 @@ def main_worker(gpu, ngpus_per_node, args):
 
     lr_scheduler = CosineWarmupLr(optimizer, batches_pre_epoch, epochs,
                                   base_lr=args.lr, warmup_epochs=args.warmup_epochs)
+
+    # dropblock_scheduler = DropBlockScheduler(model, batches_pre_epoch, epochs)
+
     if args.lookahead:
         optimizer = Lookahead(optimizer)
         logger.info('Use lookahead optimizer.')
@@ -203,15 +204,11 @@ def main_worker(gpu, ngpus_per_node, args):
     model.cuda(args.gpu)
     args.num_workers = int((args.num_workers + ngpus_per_node - 1) / ngpus_per_node)
 
-    if dtype == 'float16':
+    if mix_precision_training and is_first_rank:
         logger.info('Train with FP16.')
-        model, optimizer = amp.initialize(model, optimizer, opt_level='O1')
 
-    if args.apex_ddp:
-        # not recommend, lead to low accuracy.
-        model = DDP(model, delay_allreduce=True)
-    else:
-        model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+    scaler = GradScaler(enabled=mix_precision_training)
+    model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
 
     Loss = nn.CrossEntropyLoss().cuda(args.gpu) if not args.label_smoothing else \
         LabelSmoothingLoss(args.classes, smoothing=0.1).cuda(args.gpu)
@@ -223,7 +220,7 @@ def main_worker(gpu, ngpus_per_node, args):
         train_transform = transforms.Compose([
             transforms.RandomResizedCrop(input_size),
             transforms.RandomHorizontalFlip(),
-            ImageNetPolicy(),
+            ImageNetPolicy,
             transforms.ToTensor(),
             normalize,
         ])
@@ -244,12 +241,8 @@ def main_worker(gpu, ngpus_per_node, args):
         normalize,
     ])
 
-    if not args.use_lmdb:
-        train_set = ImageNet(args.data_path, split='train', transform=train_transform)
-        val_set = ImageNet(args.data_path, split='val', transform=val_transform)
-    else:
-        train_set = ImageLMDB(os.path.join(args.data_path, 'train.lmdb'), transform=train_transform)
-        val_set = ImageLMDB(os.path.join(args.data_path, 'val.lmdb'), transform=val_transform)
+    train_set = ImageNet(args.data_path, split='train', transform=train_transform)
+    val_set = ImageNet(args.data_path, split='val', transform=val_transform)
 
     train_sampler = DistributedSampler(train_set)
     train_loader = DataLoader(train_set, args.batch_size, False, pin_memory=True,
@@ -262,7 +255,7 @@ def main_worker(gpu, ngpus_per_node, args):
         checkpoint = torch.load(args.resume_param, map_location=loc)
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
-        amp.load_state_dict(checkpoint['amp'])
+        scaler.load_state_dict(checkpoint['scaler'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         print("Finish loading resume param.")
 
@@ -277,10 +270,10 @@ def main_worker(gpu, ngpus_per_node, args):
         train_sampler.set_epoch(epoch)
         if not args.mixup:
             train_one_epoch(model, train_loader, Loss, optimizer, epoch, lr_scheduler,
-                            logger, top1_acc, loss_record, args)
+                            logger, top1_acc, loss_record, scaler, args)
         else:
             train_one_epoch_mixup(model, train_loader, Loss, optimizer, epoch, lr_scheduler,
-                                  logger, loss_record, args)
+                                  logger, loss_record, scaler, args)
         train_speed = int(args.num_training_samples // (time.time() - tic))
         logger.info('Finish one epoch speed: {} samples/s'.format(train_speed))
         test(model, val_loader, Loss, epoch, logger, top1_acc, top5_acc, loss_record, args)
@@ -289,7 +282,7 @@ def main_worker(gpu, ngpus_per_node, args):
             checkpoint = {
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
-                'amp': amp.state_dict(),
+                'scaler': scaler.state_dict(),
                 'lr_scheduler': lr_scheduler.state_dict(),
             }
             torch.save(checkpoint, '{}/{}_{}_{:.5}.pt'.format(
@@ -321,7 +314,7 @@ def test(model, val_loader, criterion, epoch, logger, top1_acc, top5_acc, loss_r
 
 
 def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_scheduler,
-                    logger, top1_acc, loss_record, args):
+                    logger, top1_acc, loss_record, scaler, args):
     top1_acc.reset()
     loss_record.reset()
     tic = time.time()
@@ -332,14 +325,14 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_schedul
         labels = labels.cuda(args.gpu, non_blocking=True)
 
         optimizer.zero_grad()
-        outputs = model(data)
-        loss = criterion(outputs, labels)
-
-        with amp.scale_loss(loss, optimizer) as scaled_loss:
-            scaled_loss.backward()
-        optimizer.step()
-
+        with autocast():
+            outputs = model(data)
+            loss = criterion(outputs, labels)
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         lr_scheduler.step()
+
         top1_acc.update(outputs, labels)
         loss_record.update(loss)
 
@@ -353,7 +346,7 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_schedul
 
 
 def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_scheduler,
-                          logger, loss_record, args):
+                          logger, loss_record, scaler, args):
     loss_record.reset()
     tic = time.time()
 
@@ -364,12 +357,12 @@ def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_s
 
         data, labels_a, labels_b, lam = mixup_data(data, labels, args.mixup_alpha)
         optimizer.zero_grad()
-        outputs = model(data)
-        loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
-
-        with amp.scale_loss(loss, optimizer) as scaled_loss:
-            scaled_loss.backward()
-        optimizer.step()
+        with autocast():
+            outputs = model(data)
+            loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
 
         loss_record.update(loss)
         lr_scheduler.step()

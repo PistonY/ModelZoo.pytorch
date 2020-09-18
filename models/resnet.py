@@ -5,6 +5,7 @@
 import torch.nn as nn
 from torch.nn import functional as F
 from torchtoolbox.nn import Activation
+from module.dropblock import DropBlock2d
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152', 'resnext50_32x4d', 'resnext101_32x8d',
@@ -62,7 +63,8 @@ class Bottleneck(nn.Module):
     expansion = 4
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1,
-                 base_width=64, norm_layer=None, activation=None):
+                 base_width=64, norm_layer=None, activation=None, drop_block=False,
+                 drop_prob=0.1, block_size=7):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -76,14 +78,17 @@ class Bottleneck(nn.Module):
         self.bn3 = norm_layer(planes * self.expansion)
         self.act = Activation(activation, auto_optimize=True)
         self.downsample = nn.Identity() if downsample is None else downsample
+        self.dropblock = DropBlock2d(drop_prob, block_size) if drop_block else nn.Identity()
 
     def forward(self, x):
         out = self.conv1(x)
         out = self.bn1(out)
+        out = self.dropblock(out)
         out = self.act(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
+        out = self.dropblock(out)
         out = self.act(out)
 
         out = self.conv3(out)
@@ -92,6 +97,7 @@ class Bottleneck(nn.Module):
         identity = self.downsample(x)
 
         out += identity
+        out = self.dropblock(out)
         out = self.act(out)
 
         return out
@@ -174,7 +180,8 @@ class BottleneckV2(nn.Module):
 
 class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=1000, groups=1, width_per_group=64,
-                 norm_layer=None, activation='relu', dropout_rate=None, small_input=False):
+                 norm_layer=None, activation='relu', dropout_rate=None, small_input=False,
+                 drop_block=True):
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -199,14 +206,14 @@ class ResNet(nn.Module):
             self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, drop_block=drop_block)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, drop_block=drop_block)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(dropout_rate, inplace=True) if dropout_rate is not None else nn.Identity()
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
-    def _make_layer(self, block, planes, blocks, stride=1):
+    def _make_layer(self, block, planes, blocks, stride=1, drop_block=False):
         norm_layer = self._norm_layer
         downsample = None
 
@@ -218,12 +225,12 @@ class ResNet(nn.Module):
 
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-                            self.base_width, norm_layer, self._activation))
+                            self.base_width, norm_layer, self._activation, drop_block))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(block(self.inplanes, planes, groups=self.groups,
                                 base_width=self.base_width, norm_layer=norm_layer,
-                                activation=self._activation))
+                                activation=self._activation, drop_block=drop_block))
 
         return nn.Sequential(*layers)
 
