@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
-import argparse, time, os
+import argparse
+import time
+import os
 import models
 import torch
 import warnings
-# import apex
 
-from scripts.utils import get_logger, get_model, set_model
+from scripts.utils import get_logger, get_model
 from torchtoolbox import metric
 from torchtoolbox.nn import LabelSmoothingLoss
 from torchtoolbox.optimizer import CosineWarmupLr, Lookahead
@@ -26,8 +27,6 @@ from torch import nn
 from torch import optim
 from torch.cuda.amp import autocast, GradScaler
 
-# from apex import amp
-# from apex.parallel.distributed import DistributedDataParallel as DDP
 from module.aa import ImageNetPolicy
 
 # from module.dropblock import DropBlockScheduler
@@ -51,8 +50,6 @@ parser.add_argument('--wd', type=float, default=0.0001,
                     help='weight decay rate. default is 0.0001.')
 parser.add_argument('--dropout', type=float, default=0.,
                     help='model dropout rate.')
-parser.add_argument('--sync-bn', action='store_true',
-                    help='use Apex Sync-BN.')
 parser.add_argument('--lookahead', action='store_true',
                     help='use lookahead optimizer.')
 parser.add_argument('--warmup-lr', type=float, default=0.0,
@@ -67,10 +64,6 @@ parser.add_argument('--input-size', type=int, default=224,
                     help='size of the input image size. default is 224')
 parser.add_argument('--crop-ratio', type=float, default=0.875,
                     help='Crop ratio during validation. default is 0.875')
-parser.add_argument('--norm-layer', type=str, default='',
-                    help='Norm layer to use.')
-parser.add_argument('--activation', type=str, default='',
-                    help='activation to use.')
 parser.add_argument('--mixup', action='store_true',
                     help='whether train the model with mix-up. default is false.')
 parser.add_argument('--mixup-alpha', type=float, default=0.2,
@@ -91,8 +84,6 @@ parser.add_argument('--save-dir', type=str, default='params',
                     help='directory of saved models')
 parser.add_argument('--model-info', action='store_true',
                     help='show model information.')
-parser.add_argument('--apex-ddp', action='store_true',
-                    help='use APEX `DistributedDataParallel`')
 parser.add_argument('--log-interval', type=int, default=50,
                     help='Number of batches to wait before logging.')
 parser.add_argument('--logging-file', type=str, default='distribute_train_imagenet.log',
@@ -167,12 +158,7 @@ def main_worker(gpu, ngpus_per_node, args):
     batches_pre_epoch = args.num_training_samples // (args.batch_size * ngpus_per_node)
     lr = 0.1 * (args.batch_size * ngpus_per_node // 32) if args.lr == 0 else args.lr
 
-    model_setting = set_model(args.dropout, args.norm_layer, args.activation)
-
-    try:
-        model = get_model(models, args.model, alpha=args.alpha, **model_setting)
-    except TypeError:
-        model = get_model(models, args.model, **model_setting)
+    model = get_model(models, args.model)
 
     model.apply(initializer)
     if args.last_gamma:
@@ -275,7 +261,8 @@ def main_worker(gpu, ngpus_per_node, args):
             train_one_epoch_mixup(model, train_loader, Loss, optimizer, epoch, lr_scheduler,
                                   logger, loss_record, scaler, args)
         train_speed = int(args.num_training_samples // (time.time() - tic))
-        logger.info('Finish one epoch speed: {} samples/s'.format(train_speed))
+        if is_first_rank:
+            logger.info('Finish one epoch speed: {} samples/s'.format(train_speed))
         test(model, val_loader, Loss, epoch, logger, top1_acc, top5_acc, loss_record, args)
 
         if args.rank % ngpus_per_node == 0:
