@@ -57,13 +57,13 @@ class GhostBottleneck(nn.Module):
         if stride > 1:
             self.dw_conv = nn.Sequential(
                 nn.Conv2d(mid_c, mid_c, dw_kernel_size, stride,
-                          dw_kernel_size // 2, groups=mid_c),
+                          dw_kernel_size // 2, groups=mid_c, bias=False),
                 nn.BatchNorm2d(mid_c)
             )
         else:
             self.dw_conv = nn.Identity()
         self.se = SE(mid_c, reduction_ratio=se_ratio) if se_ratio is not None else nn.Identity()
-        self.ghost2 = GhostModule(mid_c, out_c, act=True)
+        self.ghost2 = GhostModule(mid_c, out_c, act=False)
 
         if in_c == out_c and stride == 1:
             self.shortcut = nn.Identity()
@@ -159,3 +159,13 @@ class GhostNet(nn.Module):
         x = self.stage(x)
         x = self.head(x)
         return x
+
+
+if __name__ == '__main__':
+    from torchtoolbox.tools import summary
+
+    model = GhostNet(width=1.0)
+    model.eval()
+    x = torch.randn(1, 3, 224, 224)
+
+    summary(model, x)
