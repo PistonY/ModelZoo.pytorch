@@ -128,7 +128,7 @@ class Head(nn.Module):
 
 
 class GhostNet(nn.Module):
-    def __init__(self, num_classes=1000, width=1.3, dropout=0.2):
+    def __init__(self, num_classes=1000, width=1.3, dropout=0):
         super(GhostNet, self).__init__()
         assert dropout >= 0, "Use = 0 to disable or > 0 to enable."
         self.width = width
