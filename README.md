@@ -14,7 +14,6 @@ RTX series, V100. If you want to totally reproduce my research, you'd better use
 
 ### Requirement
 - Pytorch: >= 1.1.0
-- [Apex](https://github.com/NVIDIA/apex): nightly version. Support optimized FP16 tools.
 - [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version.
 Helper functions to make your code simpler and more readable, it's a optional tools
 if you don't want to use it just write them yourself.
@@ -29,13 +28,14 @@ I provide conversion script [here](scripts/generate_LMDB_dataset.py).
 
 ### Train script
 ```shell
-python train_script.py --params
+python distribute_train_script --params
 ```
 Here is a example
 ```shell
-python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-lmdb \
-       --batch-size 256 --dtype float16 --devices 0,1,2,3,4,5,6,7 -j 12 --epochs 150 --lr 2.6 --warmup-epochs 5 \ 
-       --wd 0.00003 --model MobileNetV3_Large --log-interval 150
+python distribute_train_script.py --data-path /s4/piston/ImageNet --batch-size 256 --dtype float16 \
+                                  -j 48 --epochs 360 --lr 2.6 --warmup-epochs 5 --label-smoothing \
+                                  --no-wd --wd 0.00003 --model GhostNet --log-interval 150 --model-info \
+                                  --dist-url tcp://127.0.0.1:26548 --world-size 1 --rank 0
 ```
 
 ## ToDo
