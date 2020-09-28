@@ -95,25 +95,22 @@ You can think of it as a performance in the current situation.
 |:----:|:-----:|:-----:|:---------:|:----:|:---:|:------:|:----:|:---------:|:------:|:----:|
 |resnet50|120  |FP16   |128        | 8    |0.4  | -      |   -  |77.36/-    |baseline|[Google Drive](https://drive.google.com/drive/folders/1orshUNj-4LroO2q-vyd45c_Iz7alQ50M?usp=sharing)|
 |resnet50|120  |FP16   |128        | 8    |0.4  |Label smoothing|smoothing=0.1|77.78/93.80 |**+0.42** |[Google Drive](https://drive.google.com/drive/folders/1CO8Fmbiy1TgEvdpU-KKV7AHIa7EanaqG?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |-            |77.28/93.61*|-0.08 |[Google Drive](https://drive.google.com/drive/folders/1oYC3EjLn-2nnWrS_UrhaP_3YY3uhWzhz?usp=sharing)|
-|resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |-            |77.31/93.49^|-0.05 |[Google Drive](https://drive.google.com/drive/folders/1QW2LSl7JsTcnCGM289N9wA-xkjkuhBvg?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |-            |77.28/93.61 |-0.08 |[Google Drive](https://drive.google.com/drive/folders/1oYC3EjLn-2nnWrS_UrhaP_3YY3uhWzhz?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |Sync BN        |-            |77.31/93.49 |-0.05 |[Google Drive](https://drive.google.com/drive/folders/1QW2LSl7JsTcnCGM289N9wA-xkjkuhBvg?usp=sharing)|
 |resnet50|120  |FP16   |128        | 8    |0.4  |Mixup          |alpha=0.2    |77.49/93.73 |**+0.13** |missing|
 |resnet50|120  |FP16   |128        | 8    |0.4  |RandomRotation |degree=15    |76.64/93.28 |-1.15 |[Google Drive](https://drive.google.com/drive/folders/1FYmTVStop4VT5LA9RCPUbWPnzGsEJoCy?usp=sharing)|
 |resnet50|120  |FP16   |128        | 8    |0.4  |Cutout         |read code    |77.44/93.62 |**+0.08** |[Google Drive](https://drive.google.com/drive/folders/1HhDTDkj6Zg_oJT-5TQZu1RP-CYs1fr3U?usp=sharing)|
 |resnet50|120  |FP16   |128        | 8    |0.4  |Dropout        |rate=0.3     |77.11/93.58 |-0.25 |[Google Drive](https://drive.google.com/drive/folders/1sA6e8sewz-Za6ySUUJcLpiTjV9V1Fk8f?usp=sharing)|
 |resnet50|120  |FP16   |128        | 8    |0.4  |Lookahead-SGD  |    -        |77.23/93.39 |-0.13 |[Google Drive](https://drive.google.com/drive/folders/1gC8pD7CDDQ7haBKhNBNqj8i9Xsk3cNla?usp=sharing)|
-|resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44~|-0.30 |[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
+|resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44 |-0.30 |[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
 |oct_resnet50|120  |FP16 |128      | 8    |0.4  |OctConv        |alpha=0.125  |-|-||
 |resnet50|120  |FP16   |128        | 8    |0.4  |Relu6          |             |77.28/93.5  |-0.08 |[Google Drive](https://drive.google.com/drive/folders/1en9SQq2ZeswaZoTiYDAR_vQS3YAJU5gq?usp=sharing)|
 |resnet50|120  |FP16   |128        | 8    |0.4  |Gradient Centralization|Conv only|77.40/93.57 |**+0.40**||
 |resnet50|120  |FP16   |128        | 8    |0.4  |Zero γ         |             |77.24/- |**+0.24**||
 
 
-- *:If you only have 1k(128 * 8) batch size, it's not recommend to use this which made unstable convergence and finally 
-    can't get a higher accuracy.Original paper use 64k batch size but impossible for me to follow.
-- ^:Though Sync BN didn't improve any accuracy, it's a magic experience which looks like using one GPU to train.
 - More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
-- ~:50 layers may not long enough for pre-active.
+
 
 ## Citation
 ```
