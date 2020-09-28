@@ -3,7 +3,20 @@ __all__ = ['GhostNet']
 import math
 import torch
 from torch import nn
-from torchtoolbox.tools import make_divisible
+
+
+def make_divisible(v, divisible_by, min_value=None):
+    """
+    This function is taken from the original tf repo.
+    https://github.com/tensorflow/models/blob/master/research/slim/nets/mobilenet/mobilenet.py
+    """
+    if min_value is None:
+        min_value = divisible_by
+    new_v = max(min_value, int(v + divisible_by / 2) // divisible_by * divisible_by)
+    # Make sure that round down does not go down by more than 10%.
+    if new_v < 0.9 * v:
+        new_v += divisible_by
+    return new_v
 
 
 class SE(nn.Module):
@@ -164,7 +177,7 @@ class GhostNet(nn.Module):
 if __name__ == '__main__':
     from torchtoolbox.tools import summary
 
-    model = GhostNet(width=1.0)
+    model = GhostNet(width=1.3)
     model.eval()
     x = torch.randn(1, 3, 224, 224)
 

@@ -53,14 +53,22 @@ python train_script.py --params --data-path /home/xddz/data/imagenetLMDB --use-l
 |resnet101|120 |FP16   |128        |  8   |0.4  | -      | 44.7/7.8G       |79.13/94.38|[Google Drive](https://drive.google.com/drive/folders/1nmdpX39_9KidxxUXuL0uDYpDGjavQS0M?usp=sharing)|
 |resnet50v2|120|FP16   |128        |  8   |0.4  | -      | 25.6/4.1G       |77.06/93.44|[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
 |resnet101v2|120|FP16  |128        |  8   |0.4  | -      | 44.6/7.8G       |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
-|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      | 4.3/572.2M     |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
-|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      | 3.5/305.3M     |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
-|mobilenetv3 Large|360|FP16  |256  |  8   |2.6  |Label smoothing No decay bias Dropout|   5.5/219M         |75.64/92.61 |[Google Drive](https://drive.google.com/drive/folders/1pZSDhNuSxSIyKq4Leyam9m5iQr1Xcpf6?usp=sharing)|
-|mobilenetv3 Small|360|FP16  |256  |  8   |2.6  |Label smoothing No decay bias Dropout|   3.0/57.8M         |67.83/87.78 ||
 |RegNetX4_0GF|120|FP16 |128        |  8   |0.4  | -      | 22.2/4.0G       |78.40/94.04||
 |RegNetY4_0GF|120|FP16 |128        |  8   |0.4  | -      | 22.1/4.0G       |79.22/94.57||
 |RegNetY6_4GF|120|FP16 |128        |  8   |0.4  | -      | 31.2/6.4G       |79.69/94.82||
 |ResNeST50   |120|FP16 |128        |  8   |0.4  | -      | 27.5/4.1G       |78.62/94.28||
+|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      | 4.3/572.2M     |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
+|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      | 3.5/305.3M     |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
+|mobilenetv3 Large|360|FP16  |256  |  8   |2.6  |Label smoothing No decay bias Dropout|   5.5/219M         |75.64/92.61 |[Google Drive](https://drive.google.com/drive/folders/1pZSDhNuSxSIyKq4Leyam9m5iQr1Xcpf6?usp=sharing)|
+|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      | 4.3/572.2M     |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
+|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      | 3.5/305.3M     |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
+|mobilenetv3 Large|360|FP16  |256  |  8   |2.6  |Label smoothing No decay bias Dropout|   5.5/219M         |75.64/92.61 |[Google Drive](https://drive.google.com/drive/folders/1pZSDhNuSxSIyKq4Leyam9m5iQr1Xcpf6?usp=sharing)|
+|mobilenetv3 Small|360|FP16  |256  |  8   |2.6  |Label smoothing No decay bias Dropout|   3.0/57.8M         |67.83/87.78 ||
+|mobilenetv1|150|FP16  |256        |  8   |0.4  | -      | 4.3/572.2M     |72.17/90.70|[Google Drive](https://drive.google.com/drive/folders/1n_4WTnh-anrszm1VCo35etmUsG7O4j9e?usp=sharing)|
+|mobilenetv2|150|FP16  |256        |  8   |0.4  | -      | 3.5/305.3M     |71.94/90.59|[Google Drive](https://drive.google.com/drive/folders/1PqqyZ02L4h42KOVPSO6e9A0a_gVCir_b?usp=sharing)|
+|mobilenetv3 Large|360|FP16  |256  |  8   |2.6  |Label smoothing No decay bias Dropout|   5.5/219M         |75.64/92.61 |[Google Drive](https://drive.google.com/drive/folders/1pZSDhNuSxSIyKq4Leyam9m5iQr1Xcpf6?usp=sharing)|
+|GhostNet1.3      |360|FP16  |400  |  8   |2.6  |Label smoothing No decay bias Dropout|   7.4/230.4M       |75.78/92.77 ||
+
 
 
 - I use nesterov SGD and cosine lr decay with 5 warmup epochs by default[2][3] (to save time), it's more common and effective.
