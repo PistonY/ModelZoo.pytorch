@@ -13,7 +13,7 @@ try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me.
 
 ### Requirement
-- Pytorch: >= 1.1.0
+- Pytorch: >= 1.6.0 (Need torch.cuda.amp in version 1.6)
 - [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version.
 Helper functions to make your code simpler and more readable, it's a optional tools
 if you don't want to use it just write them yourself.
