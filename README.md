@@ -10,11 +10,11 @@ try my best to get SOTA model on ImageNet. In this repo I'll only consider FP16.
 - OS: Ubuntu 18.04
 - CUDA: 10.1, CuDNN: 7.6
 - Devices: I use 8 * RTX 2080ti(8 * V100 should be much better /cry). This project is in FP16 precision, it's recommend to use FP16 friendly devices like 
-RTX series, V100. If you want to totally reproduce my research, you'd better use same (total) batch size with me.
+RTX series, V100. If you want to totally reproduce my research, you'd better use same batch size with me.
 
 ### Requirement
 - Pytorch: >= 1.6.0 (Need torch.cuda.amp in version 1.6)
-- [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): nightly version.
+- [TorchToolbox](https://github.com/deeplearningforfun/torch-toolbox): stable version.
 Helper functions to make your code simpler and more readable, it's a optional tools
 if you don't want to use it just write them yourself.
 
