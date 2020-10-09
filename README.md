@@ -19,7 +19,7 @@ Helper functions to make your code simpler and more readable, it's a optional to
 if you don't want to use it just write them yourself.
 
 ### LMDB Dataset
-- Not necessary.
+- No necessary.
 
 If you found any IO bottleneck please use LMDB format dataset. A good way is try both and find out
 which is more faster.
@@ -27,6 +27,7 @@ which is more faster.
 I provide conversion script [here](scripts/generate_LMDB_dataset.py).
 
 ### Train script
+
 ```shell
 python distribute_train_script --params
 ```

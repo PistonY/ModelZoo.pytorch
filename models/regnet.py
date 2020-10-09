@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from torch import nn
-from torchtoolbox.tools import make_divisible
-
 __all__ = ['RegNetX200MF', 'RegNetX400MF', 'RegNetX600MF', 'RegNetX800MF',
            'RegNetX1_6GF', 'RegNetX3_2GF', 'RegNetX4_0GF', 'RegNetX6_4GF', 'RegNetX8_0GF',
            'RegNetY200MF', 'RegNetY400MF', 'RegNetY600MF', 'RegNetY800MF',
            'RegNetY1_6GF', 'RegNetY3_2GF', 'RegNetY4_0GF', 'RegNetY6_4GF', 'RegNetY8_0GF'
            ]
+
+from torch import nn
+from torchtoolbox.tools import make_divisible
 
 
 class Stem(nn.Module):

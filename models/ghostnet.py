@@ -173,12 +173,3 @@ class GhostNet(nn.Module):
         x = self.head(x)
         return x
 
-
-if __name__ == '__main__':
-    from torchtoolbox.tools import summary
-
-    model = GhostNet(width=1.3)
-    model.eval()
-    x = torch.randn(1, 3, 224, 224)
-
-    summary(model, x)
