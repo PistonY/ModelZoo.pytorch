@@ -54,6 +54,7 @@ python distribute_train_script.py --data-path /s4/piston/ImageNet --batch-size 2
 |resnet101|120 |FP16   |128        |  8   |0.4  | -      | 44.7/7.8G       |79.13/94.38|[Google Drive](https://drive.google.com/drive/folders/1nmdpX39_9KidxxUXuL0uDYpDGjavQS0M?usp=sharing)|
 |resnet50v2|120|FP16   |128        |  8   |0.4  | -      | 25.6/4.1G       |77.06/93.44|[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
 |resnet101v2|120|FP16  |128        |  8   |0.4  | -      | 44.6/7.8G       |78.90/94.39|[Google Drive](https://drive.google.com/drive/folders/1L4r5S9MciLUkBzzjZwZ-vlC2xH1O1Csj?usp=sharing)|
+|ResNext50_32x4d|120|FP16  |128    |  8   |0.4  | -      | 25.1/4.2G       |79.00/94.39||
 |RegNetX4_0GF|120|FP16 |128        |  8   |0.4  | -      | 22.2/4.0G       |78.40/94.04||
 |RegNetY4_0GF|120|FP16 |128        |  8   |0.4  | -      | 22.1/4.0G       |79.22/94.57||
 |RegNetY6_4GF|120|FP16 |128        |  8   |0.4  | -      | 31.2/6.4G       |79.69/94.82||

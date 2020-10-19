@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : DevinYang(pistonyang@gmail.com)
 
-
 import torch.nn as nn
-from torch.nn import functional as F
 from torchtoolbox.nn import Activation
 from module.dropblock import DropBlock2d
 
