@@ -135,6 +135,7 @@ def main():
     args.world = args.rank
     ngpus_per_node = torch.cuda.device_count()
     args.world_size = ngpus_per_node * args.world_size
+    args.mix_precision_training = True if args.dtype == 'float16' else False
     mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
 
 
@@ -152,7 +153,7 @@ def main_worker(gpu, ngpus_per_node, args):
     resume_epoch = args.resume_epoch
     initializer = KaimingInitializer()
     zero_gamma = ZeroLastGamma()
-    mix_precision_training = True if args.dtype == 'float16' else False
+    mix_precision_training = args.mix_precision_training
     is_first_rank = True if args.rank % ngpus_per_node == 0 else False
 
     batches_pre_epoch = args.num_training_samples // (args.batch_size * ngpus_per_node)
@@ -190,10 +191,10 @@ def main_worker(gpu, ngpus_per_node, args):
     model.cuda(args.gpu)
     args.num_workers = int((args.num_workers + ngpus_per_node - 1) / ngpus_per_node)
 
-    if mix_precision_training and is_first_rank:
+    if args.mix_precision_training and is_first_rank:
         logger.info('Train with FP16.')
 
-    scaler = GradScaler(enabled=mix_precision_training)
+    scaler = GradScaler(enabled=args.mix_precision_training)
     model = nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
 
     Loss = nn.CrossEntropyLoss().cuda(args.gpu) if not args.label_smoothing else \
@@ -312,7 +313,7 @@ def train_one_epoch(model, train_loader, criterion, optimizer, epoch, lr_schedul
         labels = labels.cuda(args.gpu, non_blocking=True)
 
         optimizer.zero_grad()
-        with autocast():
+        with autocast(enabled=args.mix_precision_training):
             outputs = model(data)
             loss = criterion(outputs, labels)
         scaler.scale(loss).backward()
@@ -344,7 +345,7 @@ def train_one_epoch_mixup(model, train_loader, criterion, optimizer, epoch, lr_s
 
         data, labels_a, labels_b, lam = mixup_data(data, labels, args.mixup_alpha)
         optimizer.zero_grad()
-        with autocast():
+        with autocast(args.mix_precision_training):
             outputs = model(data)
             loss = mixup_criterion(criterion, outputs, labels_a, labels_b, lam)
         scaler.scale(loss).backward()

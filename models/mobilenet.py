@@ -53,7 +53,7 @@ class MobileNetBottleneck(nn.Module):
                  activation='relu6', first_conv=True, skip=True, linear=True):
         super(MobileNetBottleneck, self).__init__()
 
-        self.act = Activation(activation, auto_optimize=True)
+        self.act = Activation(activation, auto_optimize=True)  # [bug]no use when linear=True
         hidden_c = round(in_c * expansion)
         self.linear = linear
         self.skip = stride == 1 and in_c == out_c and skip
