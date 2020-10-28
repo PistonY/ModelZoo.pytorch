@@ -107,8 +107,10 @@ You can think of it as a performance in the current situation.
 |resnet50v2|120  |FP16 |128        | 8    |0.4  |pre-active     |    -        |77.06/93.44 |-0.30 |[Google Drive](https://drive.google.com/drive/folders/1W_GBANCv0eOQaTmDFZ-NrNJlUay5NP-C?usp=sharing)|
 |oct_resnet50|120  |FP16 |128      | 8    |0.4  |OctConv        |alpha=0.125  |-|-||
 |resnet50|120  |FP16   |128        | 8    |0.4  |Relu6          |             |77.28/93.5  |-0.08 |[Google Drive](https://drive.google.com/drive/folders/1en9SQq2ZeswaZoTiYDAR_vQS3YAJU5gq?usp=sharing)|
+|resnet50|120  |FP16   |128        | 8    |0.4  |               |   -         |77.00/-    |DDP baseline||
 |resnet50|120  |FP16   |128        | 8    |0.4  |Gradient Centralization|Conv only|77.40/93.57 |**+0.40**||
 |resnet50|120  |FP16   |128        | 8    |0.4  |Zero γ         |             |77.24/- |**+0.24**||
+|resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |             |77.74/- |**+0.74**||
 
 
 - More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.

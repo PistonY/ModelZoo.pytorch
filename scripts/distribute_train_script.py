@@ -153,7 +153,6 @@ def main_worker(gpu, ngpus_per_node, args):
     resume_epoch = args.resume_epoch
     initializer = KaimingInitializer()
     zero_gamma = ZeroLastGamma()
-    mix_precision_training = args.mix_precision_training
     is_first_rank = True if args.rank % ngpus_per_node == 0 else False
 
     batches_pre_epoch = args.num_training_samples // (args.batch_size * ngpus_per_node)

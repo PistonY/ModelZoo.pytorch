@@ -88,7 +88,6 @@ class Bottleneck(nn.Module):
         self.bn1 = nn.BatchNorm2d(planes)
 
         self.conv2 = LambdaLayer(planes, dim_k=16, r=15, heads=4, dim_u=1)
-        self.bn2 = nn.BatchNorm2d(planes)
         self.pool = nn.AvgPool2d(3, 2, 1) if stride != 1 else nn.Identity()
 
         self.conv3 = conv1x1(planes, planes * self.expansion)
@@ -102,8 +101,6 @@ class Bottleneck(nn.Module):
         out = self.act(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.act(out)
         out = self.pool(out)
 
         out = self.conv3(out)
