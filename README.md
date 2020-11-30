@@ -116,7 +116,7 @@ You can think of it as a performance in the current situation.
 
 
 - More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
-
+- Auto/Rand Augment may train 180 epochs better.
 
 ## Citation
 ```
