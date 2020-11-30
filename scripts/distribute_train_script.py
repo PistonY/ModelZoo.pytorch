@@ -16,7 +16,8 @@ from torchtoolbox.optimizer.sgd_gc import SGD_GC
 from torchtoolbox.nn.init import KaimingInitializer
 from torchtoolbox.tools import no_decay_bias, \
     mixup_data, mixup_criterion, check_dir, summary
-from torchtoolbox.transform import Cutout
+from torchtoolbox.transform import Cutout, ImageNetPolicy, \
+    RandAugment
 
 from torchvision.datasets import ImageNet
 from torch import multiprocessing as mp
@@ -27,7 +28,7 @@ from torch import nn
 from torch import optim
 from torch.cuda.amp import autocast, GradScaler
 
-from module.aa import ImageNetPolicy
+# from module.aa import ImageNetPolicy
 
 # from module.dropblock import DropBlockScheduler
 
@@ -76,8 +77,8 @@ parser.add_argument('--last-gamma', action='store_true',
                     help='apply zero last bn weight in Bottleneck')
 parser.add_argument('--sgd-gc', action='store_true',
                     help='using sgd Gradient Centralization')
-parser.add_argument('--autoaugment', action='store_true',
-                    help='use autoaugment')
+parser.add_argument('--transform', type=str, default='normal',
+                    help='use normal, aa or ra.')
 parser.add_argument('--drop-block', action='store_true',
                     help='use DropBlock')
 parser.add_argument('--save-dir', type=str, default='params',
@@ -202,11 +203,23 @@ def main_worker(gpu, ngpus_per_node, args):
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
-    if args.autoaugment:
+    if args.transform == 'aa':
+        if is_first_rank:
+            print('Using AutoAugment transform.')
         train_transform = transforms.Compose([
             transforms.RandomResizedCrop(input_size),
             transforms.RandomHorizontalFlip(),
             ImageNetPolicy,
+            transforms.ToTensor(),
+            normalize,
+        ])
+    elif args.transform == 'ra':
+        if is_first_rank:
+            print('Using RandAugment transform.')
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(input_size),
+            transforms.RandomHorizontalFlip(),
+            RandAugment(n=2, m=9),
             transforms.ToTensor(),
             normalize,
         ])

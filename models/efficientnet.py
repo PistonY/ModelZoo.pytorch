@@ -87,7 +87,6 @@ class EfficientNet(nn.Module):
                  num_classes=1000, small_input=False):
         super().__init__()
         min_depth = min_depth or depth_div
-        self.first_conv = _conv_bn(3, 32, 3, 2 if not small_input else 1, use_act=True)
 
         def renew_ch(x):
             if not width_coeff:
@@ -101,6 +100,7 @@ class EfficientNet(nn.Module):
         def renew_repeat(x):
             return int(math.ceil(x * depth_coeff))
 
+        self.first_conv = _conv_bn(3, renew_ch(32), 3, 2 if not small_input else 1, use_act=True)
         self.blocks = nn.Sequential(
             self._make_layer(renew_ch(32), renew_ch(16), 1, 3, 1, renew_repeat(1), 0.25, drop_connect_rate),
             self._make_layer(renew_ch(16), renew_ch(24), 6, 3, 2, renew_repeat(2), 0.25, drop_connect_rate),

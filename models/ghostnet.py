@@ -36,7 +36,7 @@ class SE(nn.Module):
 
 
 class GhostModule(nn.Module):
-    def __init__(self, in_c, out_c, kernel_size=1, ratio=2, dw_size=3, stride=1, act=True):
+    def __init__(self, in_c, out_c, kernel_size=1, ratio=2, dw_size=3, stride=1, act=True, h_swish=False):
         super(GhostModule, self).__init__()
         if ratio != 2:
             print("Please change output channels manually.")
@@ -112,15 +112,15 @@ class Stem(nn.Module):
 
 
 class Head(nn.Module):
-    def __init__(self, in_c, out_c, dropout):
+    def __init__(self, in_c, mid_c, out_c, dropout):
         super(Head, self).__init__()
         self.head = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(in_c, 1280, 1, bias=True),
+            nn.Conv2d(in_c, mid_c, 1, bias=True),
             nn.ReLU(inplace=True),
             nn.Flatten(),
             nn.Dropout(dropout) if dropout > 0 else nn.Identity(),
-            nn.Linear(1280, out_c)
+            nn.Linear(mid_c, out_c)
         )
 
     def forward(self, x):
@@ -162,7 +162,7 @@ class GhostNet(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        self.head = Head(self.get_c(960), num_classes, dropout)
+        self.head = Head(self.get_c(960), 1280, num_classes, dropout)
 
     def get_c(self, c):
         return make_divisible(c * self.width, 4)
@@ -172,4 +172,66 @@ class GhostNet(nn.Module):
         x = self.stage(x)
         x = self.head(x)
         return x
+
+
+class TinyGhostNet(nn.Module):
+    def __init__(self, width_coeff, depth_coeff, depth_div=4,
+                 min_depth=None, num_classes=1000, dropout=0):
+        super().__init__()
+        assert dropout >= 0, "Use = 0 to disable or > 0 to enable."
+        min_depth = min_depth or depth_div
+
+        def renew_ch(x):
+            if not width_coeff:
+                return x
+
+            new_x = max(min_depth, int(x + depth_div / 2) // depth_div * depth_div)
+            if new_x < 0.9 * new_x:
+                new_x += depth_div
+            return new_x
+
+        def renew_repeat(x):
+            return int(math.ceil(x * depth_coeff))
+
+        self.stem = Stem(renew_ch(28))
+        self.stage = nn.Sequential(
+            # stage1
+            self._make_layer(renew_ch(28), renew_ch(28), 1, 3, 1, renew_repeat(1), 0.1),
+            # stage2
+            self._make_layer(renew_ch(28), renew_ch(44), 3, 3, 2, renew_repeat(1), 0.1),
+            self._make_layer(renew_ch(44), renew_ch(44), 3, 3, 1, renew_repeat(1), 0.1),
+            # stage3
+            self._make_layer(renew_ch(44), renew_ch(72), 3, 3, 2, renew_repeat(1), 0.1),
+            self._make_layer(renew_ch(72), renew_ch(72), 3, 3, 1, renew_repeat(2), 0.1),
+            # stage4
+            self._make_layer(renew_ch(72), renew_ch(140), 6, 3, 2, renew_repeat(1), 0.1),
+            self._make_layer(renew_ch(140), renew_ch(140), 2.5, 3, 1, renew_repeat(3), 0.1),
+            self._make_layer(renew_ch(140), renew_ch(196), 6, 3, 1, renew_repeat(3), 0.1),
+            # stage5
+            self._make_layer(renew_ch(196), renew_ch(280), 6, 3, 2, renew_repeat(1), 0.1),
+            self._make_layer(renew_ch(280), renew_ch(280), 6, 3, 1, renew_repeat(5), 0.1),
+            nn.Conv2d(renew_ch(280), renew_ch(1680), 1, bias=False),
+            nn.BatchNorm2d(renew_ch(1680)),
+            nn.ReLU(inplace=True)
+        )
+        self.head = Head(renew_ch(1680), renew_ch(1400), num_classes, dropout)
+
+    def _make_layer(self, in_c, out_c, expand, kernel_size, stride, repeats, se_ratio):
+        layers = []
+
+        layers.append(GhostBottleneck(in_c, int(in_c * expand), out_c, kernel_size, stride, se_ratio))
+        for _ in range(repeats - 1):
+            layers.append(GhostBottleneck(out_c, int(out_c * expand), out_c, kernel_size, 1, se_ratio))
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.stem(x)
+        x = self.stage(x)
+        x = self.head(x)
+        return x
+
+
+def GhostNetA(num_classes=1000, dropout=0, **kwargs):
+    return TinyGhostNet(1., 1., num_classes=num_classes, dropout=dropout, **kwargs)
+
 

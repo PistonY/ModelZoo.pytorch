@@ -111,6 +111,8 @@ You can think of it as a performance in the current situation.
 |resnet50|120  |FP16   |128        | 8    |0.4  |Gradient Centralization|Conv only|77.40/93.57 |**+0.40**||
 |resnet50|120  |FP16   |128        | 8    |0.4  |Zero γ         |             |77.24/- |**+0.24**||
 |resnet50|120  |FP16   |128        | 8    |0.4  |No decay bias  |             |77.74/93.77 |**+0.74**||
+|resnet50|120  |FP16   |128        | 8    |0.4  |RandAugment    |n=2,m=9      |76.44/93.18 |-0.96||
+|resnet50|120  |FP16   |128        | 8    |0.4  |AutoAugment    |             |76.50/93.23 |-0.50||
 
 
 - More epochs for `Mixup`, `Cutout`, `Dropout` may get better results.
